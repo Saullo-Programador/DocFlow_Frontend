@@ -23,14 +23,14 @@ class Api {
     }
   }
 
-  Future<void> createFolder(String name) async {
+  Future<void> createFolder(String path) async {
     try {
       final uri = Uri.parse(
         "$baseUrl/documents/folders",
-      ).replace(queryParameters: {"name": name});
+      ).replace(queryParameters: {"path": path});
 
       final response = await http.post(uri);
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200) {
         print("Folder created successfully");
       } else {
         print("Error creating folder: ${response.statusCode}");
@@ -91,12 +91,14 @@ class Api {
     }
   }
 
-  Future<void> uploadFile(String filePath) async {
+  Future<void> uploadFile(String filePath, {String path = ""}) async {
     try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse("$baseUrl/documents/upload"),
-      );
+      final uri = Uri.parse(
+        "$baseUrl/documents/upload",
+      ).replace(queryParameters: {"path": path});
+
+      var request = http.MultipartRequest('POST', uri);
+
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
 
       var response = await request.send();
@@ -111,15 +113,20 @@ class Api {
     }
   }
 
-  Future<void> download(String fileName) async {
+  Future<void> download(String path) async {
     try {
-      final uri = Uri.parse("$baseUrl/documents/download/$fileName");
+      final uri = Uri.parse(
+        "$baseUrl/documents/download",
+      ).replace(queryParameters: {"path": path});
+
       final response = await http.get(uri);
 
       if (response.statusCode != 200) {
         print("Error: ${response.statusCode}");
         return;
       }
+
+      final fileName = path.split('/').last;
 
       if (kIsWeb) {
         final blob = html.Blob([response.bodyBytes]);

@@ -37,10 +37,13 @@ class _FolderScreenState extends State<FolderScreen> {
   Future<void> _loadFolder(String path) async {
     final folderContent = await Api().getFolderContent(path);
 
+    if(!mounted) return;
+
     setState(() {
       currentPath = path;
       items = folderContent;
     });
+    
     print("Itens recebidos: ${folderContent.length}");
 
   }
@@ -57,8 +60,8 @@ class _FolderScreenState extends State<FolderScreen> {
     }
   }
 
-  void _download(String fileName){
-    Api().download(fileName);
+  void _download(String path){
+    Api().download(path);
   }
 
   void _deleteFolder(int index) {
@@ -83,8 +86,11 @@ class _FolderScreenState extends State<FolderScreen> {
   }
 
   void _openUploadDialog() {
-    showDialog(context: context, builder: (_) => const UploadDocumentDialog());
-  }
+  showDialog(
+    context: context,
+    builder: (_) => UploadDocumentDialog(currentPath: currentPath),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +205,7 @@ class _FolderScreenState extends State<FolderScreen> {
                             
                           }, 
                           onDeleteFile: () {  }, 
-                          onDownloadFile: () => _download(item.name), 
+                          onDownloadFile: () => _download(item.path), 
                           onMoverFile: () {  },
                         );
                       },

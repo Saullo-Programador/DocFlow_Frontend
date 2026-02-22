@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:manege_doc/api/api.dart';
 import 'package:manege_doc/constants.dart';
+import 'package:manege_doc/models/Item_model.dart';
 import 'package:manege_doc/responsive/responsive.dart';
 
 class UploadDocumentDialog extends StatefulWidget {
-  const UploadDocumentDialog({super.key});
+  final String currentPath;
+  const UploadDocumentDialog({super.key, required this.currentPath});
 
   @override
   State<UploadDocumentDialog> createState() => _UploadDocumentDialogState();
@@ -16,11 +19,28 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
   final TextEditingController fileNameController = TextEditingController();
   final TextEditingController pathFolderController = TextEditingController();
 
+  List<String> folderSuggestions = [];
+  bool isLoadingFolders = false;
+  Timer? _debounce;
   File? selectedFile;
   bool isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    pathFolderController.text = widget.currentPath;
+
+    // carrega pastas iniciais
+    _loadFolderSuggestions(widget.currentPath);
+
+    // escuta digitando
+    pathFolderController.addListener(_onPathChanged);
+  }
+
+  @override
   void dispose() {
+    pathFolderController.removeListener(_onPathChanged);
+    _debounce?.cancel();
     fileNameController.dispose();
     pathFolderController.dispose();
     super.dispose();
@@ -44,11 +64,14 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
       ).showSnackBar(const SnackBar(content: Text("Selecione um arquivo")));
       return;
     }
-    Api().uploadFile(selectedFile!.path);
     try {
       setState(() => isLoading = true);
 
-      await Api().uploadFile(selectedFile!.path);
+      final manualPath = pathFolderController.text.trim();
+
+      final finalPath = manualPath.isEmpty ? widget.currentPath : manualPath;
+
+      await Api().uploadFile(selectedFile!.path, path: finalPath);
 
       if (mounted) {
         Navigator.pop(context, true);
@@ -62,6 +85,51 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
         setState(() => isLoading = false);
       }
     }
+  }
+
+  Future<void> _loadFolderSuggestions(String path) async {
+    try {
+      setState(() => isLoadingFolders = true);
+
+      final items = await Api().getFolderContent(path);
+
+      final folders = items
+          .where((e) => e.type == ItemType.folder)
+          .map((e) => e.name)
+          .toList();
+
+      if (!mounted) return;
+
+      setState(() {
+        folderSuggestions = folders;
+      });
+    } catch (e) {
+      debugPrint("Erro ao carregar pastas: $e");
+    } finally {
+      if (mounted) {
+        setState(() => isLoadingFolders = false);
+      }
+    }
+  }
+
+  void _onPathChanged() {
+    _debounce?.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      final text = pathFolderController.text.trim();
+
+      String basePath;
+
+      if (text.isEmpty) {
+        basePath = widget.currentPath;
+      } else if (text.contains("/")) {
+        basePath = text.substring(0, text.lastIndexOf("/"));
+      } else {
+        basePath = "";
+      }
+
+      _loadFolderSuggestions(basePath);
+    });
   }
 
   @override
@@ -205,12 +273,49 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
               TextField(
                 controller: pathFolderController,
                 decoration: const InputDecoration(
-                  hintText: "Ex: Raiz > Documentos > 2025",
+                  // ignore: unnecessary_string_escapes
+                  hintText: "Opcional — ex: contratos/2025",
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
                   ),
                 ),
               ),
+              if (folderSuggestions.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 150),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: folderSuggestions.length,
+                    itemBuilder: (context, index) {
+                      final folder = folderSuggestions[index];
+
+                      return ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.folder, color: primaryColor),
+                        title: Text(folder),
+                        onTap: () {
+                          final current = pathFolderController.text;
+
+                          final newPath = current.contains("/")
+                              ? "${current.substring(0, current.lastIndexOf("/"))}/$folder"
+                              : folder;
+
+                          pathFolderController.text = newPath;
+                          pathFolderController.selection =
+                              TextSelection.fromPosition(
+                                TextPosition(offset: newPath.length),
+                              );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
             ],
           ),
         ),
