@@ -56,6 +56,15 @@ class Api {
     }
   }
 
+  Future<void> deleteFolder(String path) async {
+    final uri = Uri.parse("$baseUrl/documents/delete/folder")
+      .replace(queryParameters: {"path":path});
+
+    final response = await http.delete(uri);
+    
+    debugPrint("🗑️ Delete status: ${response.statusCode}");
+  }
+
   Future<List<ItemModel>> getFolderContent(String path) async {
     try {
       final uri = Uri.parse(
@@ -91,27 +100,37 @@ class Api {
     }
   }
 
-  Future<void> uploadFile(String filePath, {String path = ""}) async {
-    try {
-      final uri = Uri.parse(
-        "$baseUrl/documents/upload",
-      ).replace(queryParameters: {"path": path});
+  Future<void> uploadFileBytes(
+  Uint8List bytes,
+  String fileName, {
+  String path = "",
+}) async {
+  try {
+    final uri = Uri.parse(
+      "$baseUrl/documents/upload",
+    ).replace(queryParameters: {"path": path});
 
-      var request = http.MultipartRequest('POST', uri);
+    var request = http.MultipartRequest('POST', uri);
 
-      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: fileName,
+      ),
+    );
 
-      var response = await request.send();
+    var response = await request.send();
 
-      if (response.statusCode == 200) {
-        print("File uploaded successfully");
-      } else {
-        print("Error uploading file: ${response.statusCode}");
-      }
-    } catch (e) {
-      print(e);
+    if (response.statusCode == 200) {
+      print("File uploaded successfully");
+    } else {
+      print("Error uploading file: ${response.statusCode}");
     }
+  } catch (e) {
+    print(e);
   }
+}
 
   Future<void> download(String path) async {
     try {
@@ -145,5 +164,14 @@ class Api {
     } catch (e) {
       print(e);
     }
+  }
+
+  Future<void> deleteFile(String path) async {
+    final uri = Uri.parse("$baseUrl/documents/delete/file")
+      .replace(queryParameters: {"path":path});
+
+    final response = await http.delete(uri);
+    
+    debugPrint("🗑️ Delete status: ${response.statusCode}");
   }
 }

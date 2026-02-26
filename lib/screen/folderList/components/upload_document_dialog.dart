@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:manege_doc/api/api.dart';
@@ -22,8 +22,10 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
   List<String> folderSuggestions = [];
   bool isLoadingFolders = false;
   Timer? _debounce;
-  File? selectedFile;
+  Uint8List? selectedFileBytes;
+  String? selectedFileName;
   bool isLoading = false;
+  String _lastLoadedPath = "";
 
   @override
   void initState() {
@@ -47,31 +49,58 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
   }
 
   Future<void> pickFile() async {
-    final result = await FilePicker.platform.pickFiles(withData: false);
+  debugPrint("📂 Abrindo FilePicker...");
 
-    if (result != null && result.files.single.path != null) {
-      setState(() {
-        selectedFile = File(result.files.single.path!);
-        fileNameController.text = result.files.single.name;
-      });
-    }
+  final result = await FilePicker.platform.pickFiles(
+    withData: true,
+  );
+
+  if (result == null) {
+    debugPrint("❌ Usuário cancelou a seleção");
+    return;
   }
 
+  final file = result.files.single;
+
+  debugPrint("✅ Arquivo selecionado:");
+  debugPrint("   • Nome: ${file.name}");
+  debugPrint("   • Bytes null? ${file.bytes == null}");
+  debugPrint("   • Tamanho: ${file.size} bytes");
+
+  if (file.bytes != null) {
+    setState(() {
+      selectedFileBytes = file.bytes!;
+      selectedFileName = file.name;
+      fileNameController.text = file.name;
+    });
+
+    debugPrint("🚀 Estado atualizado com sucesso");
+  } else {
+    debugPrint("❌ ERRO: bytes vieram null");
+  }
+}
+
   Future<void> uploadFile() async {
-    if (selectedFile == null) {
+    if (selectedFileBytes == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Selecione um arquivo")));
       return;
     }
+
     try {
       setState(() => isLoading = true);
 
       final manualPath = pathFolderController.text.trim();
-
       final finalPath = manualPath.isEmpty ? widget.currentPath : manualPath;
 
-      await Api().uploadFile(selectedFile!.path, path: finalPath);
+      debugPrint("📤 Upload path enviado: '$finalPath'");
+
+      await Api().uploadFileBytes(
+        selectedFileBytes!,
+        selectedFileName!,
+        path: finalPath,
+      );
 
       if (mounted) {
         Navigator.pop(context, true);
@@ -88,6 +117,10 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
   }
 
   Future<void> _loadFolderSuggestions(String path) async {
+    if (path == _lastLoadedPath) return;
+    if (isLoadingFolders) return;
+    _lastLoadedPath = path;
+
     try {
       setState(() => isLoadingFolders = true);
 
@@ -125,7 +158,7 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
       } else if (text.contains("/")) {
         basePath = text.substring(0, text.lastIndexOf("/"));
       } else {
-        basePath = "";
+        basePath = widget.currentPath; // ⭐ aqui estava errado antes
       }
 
       _loadFolderSuggestions(basePath);
@@ -228,10 +261,20 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        selectedFile == null
+                        selectedFileBytes == null
                             ? "Clique para selecionar o arquivo"
-                            : "Arquivo selecionado:\n${fileNameController.text}",
+                            : "Arquivo selecionado:\n$selectedFileName",
                         textAlign: TextAlign.center,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: selectedFileBytes == null
+                              ? Colors.black
+                              : primaryColor,
+                          fontWeight: selectedFileBytes == null
+                              ? FontWeight.normal
+                              : FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),

@@ -37,15 +37,14 @@ class _FolderScreenState extends State<FolderScreen> {
   Future<void> _loadFolder(String path) async {
     final folderContent = await Api().getFolderContent(path);
 
-    if(!mounted) return;
+    if (!mounted) return;
 
     setState(() {
       currentPath = path;
       items = folderContent;
     });
-    
-    print("Itens recebidos: ${folderContent.length}");
 
+    print("Itens recebidos: ${folderContent.length}");
   }
 
   void _openFolder(String newPath) {
@@ -60,14 +59,97 @@ class _FolderScreenState extends State<FolderScreen> {
     }
   }
 
-  void _download(String path){
+  void _download(String path) {
     Api().download(path);
   }
 
-  void _deleteFolder(int index) {
-    setState(() {
-      items.removeAt(index);
-    });
+  Future<void> _deleteFile(String path) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Excluir arquivo"),
+        content: const Text("Tem certeza que deseja excluir este arquivo?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text("Excluir"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await Api().deleteFile(path);
+
+      if (!mounted) return; // ⭐ CRÍTICO
+
+      await _loadFolder(currentPath);
+
+      if (!mounted) return; // ⭐ EXTRA SEGURO
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Arquivo deletado com sucesso")),
+      );
+    } catch (e) {
+      debugPrint("Erro ao deletar: $e");
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Erro ao deletar arquivo")));
+    }
+  }
+
+  Future<void> _deleteFolder(String path) async {
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Excluir pasta"),
+        content: const Text("Tem certeza que deseja excluir este pasta?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text("Excluir"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await Api().deleteFolder(path);
+
+      if (!mounted) return; // ⭐ CRÍTICO
+
+      await _loadFolder(currentPath);
+
+      if (!mounted) return; // ⭐ EXTRA SEGURO
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Pasta deletada com sucesso")),
+      );
+    } catch (e) {
+      debugPrint("Erro ao deletar: $e");
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Erro ao deletar Pasta")));
+    }
   }
 
   void _createNewFolder() async {
@@ -86,11 +168,11 @@ class _FolderScreenState extends State<FolderScreen> {
   }
 
   void _openUploadDialog() {
-  showDialog(
-    context: context,
-    builder: (_) => UploadDocumentDialog(currentPath: currentPath),
-  );
-}
+    showDialog(
+      context: context,
+      builder: (_) => UploadDocumentDialog(currentPath: currentPath),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,10 +218,10 @@ class _FolderScreenState extends State<FolderScreen> {
                             GestureDetector(
                               onTap: () {
                                 navigationStack = navigationStack.sublist(
-                                    0,
-                                    index + 1,
-                                  );
-                                  _loadFolder(navigationStack.last);
+                                  0,
+                                  index + 1,
+                                );
+                                _loadFolder(navigationStack.last);
                               },
                               child: Text(
                                 folder,
@@ -180,9 +262,7 @@ class _FolderScreenState extends State<FolderScreen> {
                         textAlign: TextAlign.center,
                       ),
                     )
-
-                    //! <--- Lista de Pastas e Arquivos --->
-
+                  //! <--- Lista de Pastas e Arquivos --->
                   : ListView.builder(
                       itemCount: items.length,
                       itemBuilder: (context, index) {
@@ -193,7 +273,7 @@ class _FolderScreenState extends State<FolderScreen> {
                           return ItemFolder(
                             folderName: item.name,
                             onTap: () => _openFolder(item.path),
-                            onDeleteFolder: () => _deleteFolder(index),
+                            onDeleteFolder: () => _deleteFolder(item.path),
                             onEditFolder: () {},
                           );
                         }
@@ -201,12 +281,10 @@ class _FolderScreenState extends State<FolderScreen> {
                         //! <--- Item Arquivo --->
                         return ItemFile(
                           fileName: item.name,
-                          onTap: () {
-                            
-                          }, 
-                          onDeleteFile: () {  }, 
-                          onDownloadFile: () => _download(item.path), 
-                          onMoverFile: () {  },
+                          onTap: () {},
+                          onDeleteFile: () => _deleteFile(item.path),
+                          onDownloadFile: () => _download(item.path),
+                          onMoverFile: () {},
                         );
                       },
                     ),
