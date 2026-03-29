@@ -18,16 +18,24 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _loadApp() async {
     await Future.delayed(const Duration(seconds: 2));
-    if(mounted){
-      context.go("/dashboard");
-    }
+    if (!mounted) return;
+    context.go("/login");
   }
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
+      backgroundColor: Colors.white, // Opcional: cor de fundo da sua marca
       body: Center(
-        child: CircularProgressIndicator(),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Aqui você pode colocar a logo do Manege Doc
+            FlutterLogo(size: 100), 
+            SizedBox(height: 24),
+            CircularProgressIndicator(),
+          ],
+        ),
       ),
     );
   }

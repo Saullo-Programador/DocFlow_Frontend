@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:manege_doc/models/search_result_model.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:http/http.dart' as http;
 import 'package:manege_doc/models/Item_model.dart';
@@ -11,7 +12,7 @@ class Api {
 
   Future<void> getHome() async {
     try {
-      http.Response response = await http.get(Uri.parse("$baseUrl/documents"));
+      http.Response response = await http.get(Uri.parse("$baseUrl/documents/"));
 
       if (response.statusCode == 200) {
         print(response.body);
@@ -57,11 +58,12 @@ class Api {
   }
 
   Future<void> deleteFolder(String path) async {
-    final uri = Uri.parse("$baseUrl/documents/delete/folder")
-      .replace(queryParameters: {"path":path});
+    final uri = Uri.parse(
+      "$baseUrl/documents/delete/folder",
+    ).replace(queryParameters: {"path": path});
 
     final response = await http.delete(uri);
-    
+
     debugPrint("🗑️ Delete status: ${response.statusCode}");
   }
 
@@ -101,36 +103,32 @@ class Api {
   }
 
   Future<void> uploadFileBytes(
-  Uint8List bytes,
-  String fileName, {
-  String path = "",
-}) async {
-  try {
-    final uri = Uri.parse(
-      "$baseUrl/documents/upload",
-    ).replace(queryParameters: {"path": path});
+    Uint8List bytes,
+    String fileName, {
+    String path = "",
+  }) async {
+    try {
+      final uri = Uri.parse(
+        "$baseUrl/documents/upload",
+      ).replace(queryParameters: {"path": path});
 
-    var request = http.MultipartRequest('POST', uri);
+      var request = http.MultipartRequest('POST', uri);
 
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'file',
-        bytes,
-        filename: fileName,
-      ),
-    );
+      request.files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+      );
 
-    var response = await request.send();
+      var response = await request.send();
 
-    if (response.statusCode == 200) {
-      print("File uploaded successfully");
-    } else {
-      print("Error uploading file: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        print("File uploaded successfully");
+      } else {
+        print("Error uploading file: ${response.statusCode}");
+      }
+    } catch (e) {
+      print(e);
     }
-  } catch (e) {
-    print(e);
   }
-}
 
   Future<void> download(String path) async {
     try {
@@ -167,11 +165,60 @@ class Api {
   }
 
   Future<void> deleteFile(String path) async {
-    final uri = Uri.parse("$baseUrl/documents/delete/file")
-      .replace(queryParameters: {"path":path});
+    final uri = Uri.parse(
+      "$baseUrl/documents/delete/file",
+    ).replace(queryParameters: {"path": path});
 
     final response = await http.delete(uri);
-    
+
     debugPrint("🗑️ Delete status: ${response.statusCode}");
+  }
+
+  Future<List<SearchResult>> searchGlobal(String query) async {
+    final uri = Uri.parse(
+      "$baseUrl/search/global",
+    ).replace(queryParameters: {"query": query});
+
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      return (data as List).map((e) => SearchResult.fromJson(e)).toList();
+    } else {
+      return [];
+    }
+  }
+
+  Future<List<SearchResult>> searchFiles(String query) async {
+    final uri = Uri.parse(
+      "$baseUrl/search/files",
+    ).replace(queryParameters: {"query": query});
+
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      return (data as List).map((e) => SearchResult.fromJson(e)).toList();
+    } else {
+      return [];
+    }
+  }
+
+  Future<List<SearchResult>> searchInFolder(String query, String path) async {
+    final uri = Uri.parse(
+      "$baseUrl/search/folder",
+    ).replace(queryParameters: {"query": query, "path": path});
+
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      return (data as List).map((e) => SearchResult.fromJson(e)).toList();
+    }
+
+    return [];
   }
 }

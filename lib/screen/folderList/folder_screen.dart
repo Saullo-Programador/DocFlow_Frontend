@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:manege_doc/api/api.dart';
 import 'package:manege_doc/constants.dart';
 import 'package:manege_doc/models/Item_model.dart';
+import 'package:manege_doc/responsive/responsive.dart';
 import 'package:manege_doc/screen/folderList/components/item_file.dart';
 import 'package:manege_doc/screen/folderList/components/item_folder.dart';
 import 'package:manege_doc/screen/folderList/components/new_folder_dialog.dart';
@@ -20,10 +23,13 @@ class _FolderScreenState extends State<FolderScreen> {
   @override
   void dispose() {
     searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
-  String currentPath = ""; // raiz = documents
+  Timer? _debounce;
+  bool isSearching = false;
+  String currentPath = "";
   List<ItemModel> items = [];
 
   List<String> navigationStack = [""];
@@ -63,10 +69,43 @@ class _FolderScreenState extends State<FolderScreen> {
     Api().download(path);
   }
 
+  Future<void> _searchGlobal(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        isSearching = false;
+      });
+
+      _loadFolder(currentPath);
+      return;
+    }
+
+    try {
+      final results = await Api().searchGlobal(query.trim());
+
+      if (!mounted) return;
+
+      setState(() {
+        isSearching = true;
+        items = results.cast<ItemModel>();
+      });
+    } catch (e) {
+      debugPrint("Erro na busca: $e");
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      _searchGlobal(query);
+    });
+  }
+
   Future<void> _deleteFile(String path) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Excluir arquivo"),
         content: const Text("Tem certeza que deseja excluir este arquivo?"),
         actions: [
@@ -76,7 +115,7 @@ class _FolderScreenState extends State<FolderScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text("Excluir"),
+            child: const Text("Excluir", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -87,11 +126,11 @@ class _FolderScreenState extends State<FolderScreen> {
     try {
       await Api().deleteFile(path);
 
-      if (!mounted) return; // ⭐ CRÍTICO
+      if (!mounted) return;
 
       await _loadFolder(currentPath);
 
-      if (!mounted) return; // ⭐ EXTRA SEGURO
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Arquivo deletado com sucesso")),
@@ -108,12 +147,12 @@ class _FolderScreenState extends State<FolderScreen> {
   }
 
   Future<void> _deleteFolder(String path) async {
-
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text("Excluir pasta"),
-        content: const Text("Tem certeza que deseja excluir este pasta?"),
+        content: const Text("Tem certeza que deseja excluir esta pasta?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -121,7 +160,7 @@ class _FolderScreenState extends State<FolderScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text("Excluir"),
+            child: const Text("Excluir", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -132,11 +171,11 @@ class _FolderScreenState extends State<FolderScreen> {
     try {
       await Api().deleteFolder(path);
 
-      if (!mounted) return; // ⭐ CRÍTICO
+      if (!mounted) return;
 
       await _loadFolder(currentPath);
 
-      if (!mounted) return; // ⭐ EXTRA SEGURO
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Pasta deletada com sucesso")),
@@ -176,122 +215,222 @@ class _FolderScreenState extends State<FolderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(defaultPadding),
-        child: Column(
-          children: [
-            TopBarFolder(
-              searchController: searchController,
-              onUploadDocument: _openUploadDialog,
-              onNewFolder: _createNewFolder,
-            ),
-            const SizedBox(height: 20),
+    final theme = Theme.of(context);
+    final isMobile = Responsive.isMobile(context);
+    final isDesktop = Responsive.isDesktop(context);
 
-            //! <--- NavigationStack --->
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Row(
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(isMobile ? 16 : defaultPadding),
+        child: Center(
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 1200),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                    style: ButtonStyle(
-                      backgroundColor: WidgetStateProperty.all(
-                        navigationStack.length > 1
-                            ? primaryColor.withValues(alpha: 0.1)
-                            : Colors.grey.withValues(alpha: 0.1),
+                  // Header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: theme.primaryColor.withOpacity(0.05),
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey[200]!),
                       ),
                     ),
-                    onPressed: navigationStack.length > 1 ? _goBack : null,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Pastas e Arquivos",
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Gerencie seus documentos e organização",
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Wrap(
-                      children: List.generate(navigationStack.length, (index) {
-                        final folder = navigationStack[index].isEmpty
-                            ? "Home"
-                            : navigationStack[index].split("/").last;
 
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                navigationStack = navigationStack.sublist(
-                                  0,
-                                  index + 1,
-                                );
-                                _loadFolder(navigationStack.last);
-                              },
+                  // Conteúdo
+                  Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      children: [
+                        // TopBar
+                        TopBarFolder(
+                          searchController: searchController,
+                          onUploadDocument: _openUploadDialog,
+                          onNewFolder: _createNewFolder,
+                          onSearch: _onSearchChanged,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Breadcrumb
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                                style: ButtonStyle(
+                                  backgroundColor: WidgetStateProperty.all(
+                                    navigationStack.length > 1
+                                        ? primaryColor.withOpacity(0.1)
+                                        : Colors.grey.withOpacity(0.1),
+                                  ),
+                                ),
+                                onPressed: navigationStack.length > 1 ? _goBack : null,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Wrap(
+                                  children: List.generate(navigationStack.length, (index) {
+                                    final folder = navigationStack[index].isEmpty
+                                        ? "Home"
+                                        : navigationStack[index].split("/").last;
+
+                                    return Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        GestureDetector(
+                                          onTap: () {
+                                            navigationStack = navigationStack.sublist(
+                                              0,
+                                              index + 1,
+                                            );
+                                            _loadFolder(navigationStack.last);
+                                          },
+                                          child: Text(
+                                            folder,
+                                            style: TextStyle(
+                                              color: primaryColor,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: isMobile ? 14 : 16,
+                                            ),
+                                          ),
+                                        ),
+                                        if (index != navigationStack.length - 1)
+                                          const Text(" > "),
+                                      ],
+                                    );
+                                  }),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const Divider(thickness: 1),
+                        const SizedBox(height: 16),
+
+                        if (isSearching)
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: EdgeInsets.only(bottom: 8),
                               child: Text(
-                                folder,
-                                style: const TextStyle(
-                                  color: primaryColor,
-                                  fontWeight: FontWeight.w500,
+                                "Resultados da busca",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey,
                                 ),
                               ),
                             ),
+                          ),
 
-                            if (index != navigationStack.length - 1)
-                              const Text(" > "),
-                          ],
-                        );
-                      }),
+                        // Lista de itens
+                        SizedBox(
+                          height: 500,
+                          child: items.isEmpty
+                              ? const Center(
+                                  child: Text(
+                                    "Nenhum item encontrado",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.normal,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                )
+                              : LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    if (isDesktop && constraints.maxWidth > 800) {
+                                      return GridView.builder(
+                                        gridDelegate:
+                                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                                          maxCrossAxisExtent: 300,
+                                          childAspectRatio: 3,
+                                          crossAxisSpacing: 12,
+                                          mainAxisSpacing: 12,
+                                        ),
+                                        itemCount: items.length,
+                                        itemBuilder: (context, index) {
+                                          final item = items[index];
+                                          return _buildItem(item);
+                                        },
+                                      );
+                                    }
+                                    return ListView.builder(
+                                      itemCount: items.length,
+                                      itemBuilder: (context, index) {
+                                        final item = items[index];
+                                        return _buildItem(item);
+                                      },
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-
-            //! <--- Linha separadora --->
-            const Divider(thickness: 1),
-
-            const SizedBox(height: 16),
-
-            Expanded(
-              child: items.isEmpty
-                  //! <--- Texto "Nenhum item encontrado" --->
-                  ? const Center(
-                      child: Text(
-                        "Nenhum item encontrado",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.normal,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  //! <--- Lista de Pastas e Arquivos --->
-                  : ListView.builder(
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-
-                        //! <--- Item Pasta  --->
-                        if (item.type == ItemType.folder) {
-                          return ItemFolder(
-                            folderName: item.name,
-                            onTap: () => _openFolder(item.path),
-                            onDeleteFolder: () => _deleteFolder(item.path),
-                            onEditFolder: () {},
-                          );
-                        }
-
-                        //! <--- Item Arquivo --->
-                        return ItemFile(
-                          fileName: item.name,
-                          onTap: () {},
-                          onDeleteFile: () => _deleteFile(item.path),
-                          onDownloadFile: () => _download(item.path),
-                          onMoverFile: () {},
-                        );
-                      },
-                    ),
-            ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildItem(ItemModel item) {
+    if (item.type == ItemType.folder) {
+      return ItemFolder(
+        folderName: item.name,
+        onTap: () => _openFolder(item.path),
+        onDeleteFolder: () => _deleteFolder(item.path),
+        onEditFolder: () {},
+      );
+    }
+
+    return ItemFile(
+      fileName: item.name,
+      onTap: () {},
+      onDeleteFile: () => _deleteFile(item.path),
+      onDownloadFile: () => _download(item.path),
+      onMoverFile: () {},
     );
   }
 }

@@ -5,12 +5,14 @@ class TopBarFolder extends StatelessWidget {
   final TextEditingController searchController;
   final VoidCallback onNewFolder;
   final VoidCallback onUploadDocument;
+  final Function(String) onSearch;
 
   const TopBarFolder({
     super.key,
     required this.searchController,
     required this.onNewFolder,
     required this.onUploadDocument,
+    required this.onSearch,
   });
 
   @override
@@ -24,7 +26,7 @@ class TopBarFolder extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.3),
+            color: Colors.grey.withValues(alpha:0.3),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -51,16 +53,17 @@ class TopBarFolder extends StatelessWidget {
     return TextField(
       controller: searchController,
       decoration: InputDecoration(
-        hintText: "Pesquisar documentos...",
+        hintText: "Buscar arquivos ou pastas...",
         prefixIcon: const Icon(Icons.search),
         filled: true,
-        fillColor: Colors.grey.withValues(alpha: 0.1),
+        fillColor: Colors.grey.withValues(alpha:0.1),
         contentPadding: const EdgeInsets.symmetric(vertical: 0),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
       ),
+        onChanged: onSearch,
     );
   }
 

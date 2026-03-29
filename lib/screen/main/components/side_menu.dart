@@ -36,16 +36,16 @@ class SideMenu extends StatelessWidget {
         press: () => context.go("/dashboard"),
       ),
       DrawerListTile(
-        title: "Folders",
+        title: "Pastas",
         icon: Icons.folder_rounded,
         isSelected: location == "/folder",
         press: () => context.go("/folder"),
       ),
       DrawerListTile(
-        title: "Profile",
-        icon: Icons.person_rounded,
-        isSelected: location == "/profile",
-        press: () => context.go("/profile"),
+        title: "Configurações",
+        icon: Icons.settings_rounded,
+        isSelected: location == "/settings",
+        press: () => context.go("/settings"),
       ),
     ];
   }

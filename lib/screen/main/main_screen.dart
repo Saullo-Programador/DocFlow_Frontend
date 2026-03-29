@@ -14,10 +14,11 @@ class MainScreen extends StatelessWidget {
 
     return Scaffold(
       key: controller.scaffoldKey,
+      backgroundColor: Colors.grey[100],
       drawer: SizedBox(width: 100, child: SideMenu()),
       appBar: !Responsive.isDesktop(context)
           ? AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: Colors.grey[100],
               elevation: 0,
               leading: IconButton(
                 onPressed: () {
@@ -30,7 +31,7 @@ class MainScreen extends StatelessWidget {
               preferredSize: Size.zero,
               child: SizedBox(),
             ),
-      body: SafeArea( 
+      body: SafeArea(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
