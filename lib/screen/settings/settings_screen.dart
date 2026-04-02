@@ -17,7 +17,7 @@ class SettingsScreen extends StatelessWidget {
         child: Center(
           child: Container(
             width: double.infinity,
-            constraints: const BoxConstraints(maxWidth: 800),
+            constraints: const BoxConstraints(maxWidth: 1200),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),

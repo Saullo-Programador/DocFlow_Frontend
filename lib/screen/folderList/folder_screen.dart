@@ -227,6 +227,7 @@ class _FolderScreenState extends State<FolderScreen> {
             width: double.infinity,
             constraints: const BoxConstraints(maxWidth: 1200),
             decoration: BoxDecoration(
+              
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [

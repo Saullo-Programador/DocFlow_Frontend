@@ -5,6 +5,7 @@ class CustomInput extends StatelessWidget {
   final String? hint;
   final IconData? icon;
   final bool isPassword;
+  final void Function(String)? onChanged;
   final TextEditingController? controller;
   final String? Function(String?)? validator;
   final TextInputType keyboardType;
@@ -15,6 +16,7 @@ class CustomInput extends StatelessWidget {
     this.hint,
     this.icon,
     this.isPassword = false,
+    this.onChanged,
     this.controller,
     this.validator,
     this.keyboardType = TextInputType.text,
@@ -32,6 +34,7 @@ class CustomInput extends StatelessWidget {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          onChanged: onChanged,
           obscureText: isPassword,
           keyboardType: keyboardType,
           validator: validator,
