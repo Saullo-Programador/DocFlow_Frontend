@@ -254,13 +254,13 @@ class FilesProvider extends ChangeNotifier {
 
   String _mapFailureToMessage(Failure failure) {
     switch (failure.runtimeType) {
-      case ServerFailure:
+      case ServerFailure _:
         return 'Erro no servidor: ${failure.message}';
-      case ConnectionFailure:
+      case ConnectionFailure _:
         return 'Sem conexão com a internet';
-      case TimeoutFailure:
+      case TimeoutFailure _:
         return 'Tempo de espera excedido';
-      case ValidationFailure:
+      case ValidationFailure _:
         return 'Dados inválidos: ${failure.message}';
       default:
         return 'Ocorreu um erro inesperado';

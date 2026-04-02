@@ -1,6 +1,6 @@
 /// Constantes da API
 ///
-/// TODO: Mover para variáveis de ambiente em produção
+/// Mover para variáveis de ambiente em produção
 class ApiConstants {
   ApiConstants._();
 

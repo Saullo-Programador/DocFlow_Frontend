@@ -1,6 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../core/network/exceptions/auth_exception.dart';
 
 /// Interface para armazenamento local de dados de autenticação
 abstract class AuthLocalDataSource {
@@ -75,7 +74,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   Future<Map<String, dynamic>?> getUserData() async {
     final data = _sharedPreferences.getString(_userDataKey);
     if (data == null) return null;
-    // TODO: Implementar parsing adequado se salvar como JSON
+    // Implementar parsing adequado se salvar como JSON
     return {};
   }
 

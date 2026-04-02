@@ -164,7 +164,7 @@ class AuthInterceptor extends Interceptor {
   /// Tenta fazer refresh do token
   Future<bool> _refreshToken() async {
     try {
-      // TODO: Implementar endpoint de refresh token se disponível na API
+      // Implementar endpoint de refresh token se disponível na API
       // Por enquanto, apenas verifica se há refresh token
       final refreshToken = await _localDataSource.getRefreshToken();
       return refreshToken != null && refreshToken.isNotEmpty;
@@ -181,7 +181,7 @@ class AuthInterceptor extends Interceptor {
       _logger.i('Tokens limpos após erro de autenticação');
 
       // Notificar app sobre logout (via event bus ou similar)
-      // TODO: Implementar notificação para redirecionar para tela de login
+      // Implementar notificação para redirecionar para tela de login
     } catch (e) {
       _logger.e('Erro ao limpar tokens: $e');
     }

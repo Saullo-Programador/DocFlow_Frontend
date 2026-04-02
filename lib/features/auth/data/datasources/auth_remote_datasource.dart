@@ -1,5 +1,4 @@
 import '../../../../core/constants/api_constants.dart';
-import '../../../../core/errors/api_exception.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/auth_response_model.dart';
 import '../models/login_request_model.dart';
