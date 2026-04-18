@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:manege_doc/constants.dart';
+import 'package:manege_doc/core/constants/app_constants.dart';
 import 'package:manege_doc/responsive/responsive.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -13,7 +13,7 @@ class SettingsScreen extends StatelessWidget {
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: EdgeInsets.all(isMobile ? 16 : defaultPadding),
+        padding: EdgeInsets.all(isMobile ? 16 : AppConstants.defaultPadding),
         child: Center(
           child: Container(
             width: double.infinity,

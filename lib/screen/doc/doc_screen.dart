@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:manege_doc/constants.dart';
+import 'package:manege_doc/core/constants/app_constants.dart';
 
 class DocScreen extends StatelessWidget {
   const DocScreen({super.key});
@@ -9,7 +9,7 @@ class DocScreen extends StatelessWidget {
     return SafeArea(
       child: SingleChildScrollView(
         primary: false,
-        padding: EdgeInsets.all(defaultPadding),
+        padding: EdgeInsets.all(AppConstants.defaultPadding),
         child: Column(
           children: [
             Center(

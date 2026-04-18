@@ -2,10 +2,11 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:manege_doc/api/api.dart';
-import 'package:manege_doc/constants.dart';
-import 'package:manege_doc/models/Item_model.dart';
+import 'package:manege_doc/core/constants/app_constants.dart';
+import 'package:manege_doc/features/files/presentation/providers/files_provider.dart';
+import 'package:manege_doc/features/folders/presentation/providers/folders_provider.dart';
 import 'package:manege_doc/responsive/responsive.dart';
+import 'package:provider/provider.dart';
 
 class UploadDocumentDialog extends StatefulWidget {
   final String currentPath;
@@ -24,7 +25,6 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
   Timer? _debounce;
   Uint8List? selectedFileBytes;
   String? selectedFileName;
-  bool isLoading = false;
   String _lastLoadedPath = "";
 
   @override
@@ -49,36 +49,36 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
   }
 
   Future<void> pickFile() async {
-  debugPrint("📂 Abrindo FilePicker...");
+    debugPrint("📂 Abrindo FilePicker...");
 
-  final result = await FilePicker.platform.pickFiles(
-    withData: true,
-  );
+    final result = await FilePicker.platform.pickFiles(
+      withData: true,
+    );
 
-  if (result == null) {
-    debugPrint("❌ Usuário cancelou a seleção");
-    return;
+    if (result == null) {
+      debugPrint("❌ Usuário cancelou a seleção");
+      return;
+    }
+
+    final file = result.files.single;
+
+    debugPrint("✅ Arquivo selecionado:");
+    debugPrint("   • Nome: ${file.name}");
+    debugPrint("   • Bytes null? ${file.bytes == null}");
+    debugPrint("   • Tamanho: ${file.size} bytes");
+
+    if (file.bytes != null) {
+      setState(() {
+        selectedFileBytes = file.bytes!;
+        selectedFileName = file.name;
+        fileNameController.text = file.name;
+      });
+
+      debugPrint("🚀 Estado atualizado com sucesso");
+    } else {
+      debugPrint("❌ ERRO: bytes vieram null");
+    }
   }
-
-  final file = result.files.single;
-
-  debugPrint("✅ Arquivo selecionado:");
-  debugPrint("   • Nome: ${file.name}");
-  debugPrint("   • Bytes null? ${file.bytes == null}");
-  debugPrint("   • Tamanho: ${file.size} bytes");
-
-  if (file.bytes != null) {
-    setState(() {
-      selectedFileBytes = file.bytes!;
-      selectedFileName = file.name;
-      fileNameController.text = file.name;
-    });
-
-    debugPrint("🚀 Estado atualizado com sucesso");
-  } else {
-    debugPrint("❌ ERRO: bytes vieram null");
-  }
-}
 
   Future<void> uploadFile() async {
     if (selectedFileBytes == null) {
@@ -88,31 +88,30 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
       return;
     }
 
-    try {
-      setState(() => isLoading = true);
+    final filesProvider = context.read<FilesProvider>();
 
-      final manualPath = pathFolderController.text.trim();
-      final finalPath = manualPath.isEmpty ? widget.currentPath : manualPath;
+    final manualPath = pathFolderController.text.trim();
+    final finalPath = manualPath.isEmpty ? widget.currentPath : manualPath;
 
-      debugPrint("📤 Upload path enviado: '$finalPath'");
+    debugPrint("📤 Upload path enviado: '$finalPath'");
 
-      await Api().uploadFileBytes(
-        selectedFileBytes!,
-        selectedFileName!,
-        path: finalPath,
-      );
+    final success = await filesProvider.uploadFile(
+      selectedFileBytes!,
+      selectedFileName!,
+      path: finalPath,
+    );
 
-      if (mounted) {
+    if (mounted) {
+      if (success) {
         Navigator.pop(context, true);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-         // ignore: use_build_context_synchronously
-        context,
-      ).showSnackBar(SnackBar(content: Text("Erro no upload: $e")));
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Erro no upload: ${filesProvider.errorMessage ?? 'Erro desconhecido'}",
+            ),
+          ),
+        );
       }
     }
   }
@@ -122,20 +121,17 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
     if (isLoadingFolders) return;
     _lastLoadedPath = path;
 
+    final foldersProvider = context.read<FoldersProvider>();
+
     try {
       setState(() => isLoadingFolders = true);
 
-      final items = await Api().getFolderContent(path);
-
-      final folders = items
-          .where((e) => e.type == ItemType.folder)
-          .map((e) => e.name)
-          .toList();
+      await foldersProvider.getFolderContent(path);
 
       if (!mounted) return;
 
       setState(() {
-        folderSuggestions = folders;
+        folderSuggestions = foldersProvider.folders.map((f) => f.name).toList();
       });
     } catch (e) {
       debugPrint("Erro ao carregar pastas: $e");
@@ -159,7 +155,7 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
       } else if (text.contains("/")) {
         basePath = text.substring(0, text.lastIndexOf("/"));
       } else {
-        basePath = widget.currentPath; // ⭐ aqui estava errado antes
+        basePath = widget.currentPath;
       }
 
       _loadFolderSuggestions(basePath);
@@ -168,17 +164,20 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final filesProvider = context.watch<FilesProvider>();
+    final isUploading = filesProvider.state == FilesState.uploading;
+
     final dialogWidth = Responsive.isDesktop(context)
         ? 900.0
         : Responsive.isTablet(context)
-        ? 700.0
-        : MediaQuery.of(context).size.width * 0.95;
+            ? 700.0
+            : MediaQuery.of(context).size.width * 0.95;
 
     final dialogHeight = Responsive.isDesktop(context)
         ? 500.0
         : Responsive.isTablet(context)
-        ? 450.0
-        : MediaQuery.of(context).size.height * 0.7;
+            ? 450.0
+            : MediaQuery.of(context).size.height * 0.7;
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -191,12 +190,10 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: const Text(
+          onPressed: isUploading ? null : () => Navigator.pop(context),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Text(
               "Cancelar",
               style: TextStyle(color: Colors.black),
             ),
@@ -204,13 +201,13 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: primaryColor,
+            backgroundColor: AppConstants.primaryColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          onPressed: isLoading ? null : uploadFile,
-          child: isLoading
+          onPressed: isUploading ? null : uploadFile,
+          child: isUploading
               ? const SizedBox(
                   width: 18,
                   height: 18,
@@ -219,12 +216,12 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
                     color: Colors.white,
                   ),
                 )
-              : Padding(
-                  padding: const EdgeInsets.symmetric(
+              : const Padding(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  child: const Text(
+                  child: Text(
                     "Enviar",
                     style: TextStyle(color: Colors.white),
                   ),
@@ -241,24 +238,23 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
                 "Upload de Documento",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-
               const SizedBox(height: 20),
               GestureDetector(
-                onTap: pickFile,
+                onTap: isUploading ? null : pickFile,
                 child: Container(
                   height: dialogHeight * 0.5,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: primaryColor),
+                    border: Border.all(color: AppConstants.primaryColor),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.cloud_upload_outlined,
                         size: 48,
-                        color: primaryColor,
+                        color: AppConstants.primaryColor,
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -271,7 +267,7 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
                         style: TextStyle(
                           color: selectedFileBytes == null
                               ? Colors.black
-                              : primaryColor,
+                              : AppConstants.primaryColor,
                           fontWeight: selectedFileBytes == null
                               ? FontWeight.normal
                               : FontWeight.w600,
@@ -281,20 +277,20 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
 
-              /// 📝 Nome do Arquivo
-              Align(
+              /// Nome do Arquivo
+              const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "Nome do Arquivo",
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               TextField(
                 controller: fileNameController,
+                enabled: !isUploading,
                 decoration: const InputDecoration(
                   hintText: "Ex: contrato_janeiro.pdf",
                   border: OutlineInputBorder(
@@ -305,8 +301,8 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
 
               const SizedBox(height: 10),
 
-              /// 📁 Caminho da Pasta
-              Align(
+              /// Caminho da Pasta
+              const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "Salvar em",
@@ -316,8 +312,8 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
               const SizedBox(height: 6),
               TextField(
                 controller: pathFolderController,
+                enabled: !isUploading,
                 decoration: const InputDecoration(
-                  // ignore: unnecessary_string_escapes
                   hintText: "Opcional — ex: contratos/2025",
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
@@ -340,7 +336,8 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
 
                       return ListTile(
                         dense: true,
-                        leading: const Icon(Icons.folder, color: primaryColor),
+                        leading: const Icon(Icons.folder,
+                            color: AppConstants.primaryColor),
                         title: Text(folder),
                         onTap: () {
                           final current = pathFolderController.text;
@@ -352,8 +349,8 @@ class _UploadDocumentDialogState extends State<UploadDocumentDialog> {
                           pathFolderController.text = newPath;
                           pathFolderController.selection =
                               TextSelection.fromPosition(
-                                TextPosition(offset: newPath.length),
-                              );
+                            TextPosition(offset: newPath.length),
+                          );
                         },
                       );
                     },

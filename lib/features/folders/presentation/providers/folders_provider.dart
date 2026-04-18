@@ -22,6 +22,7 @@ class FoldersProvider extends ChangeNotifier {
   final CreateFolderUseCase _createFolderUseCase;
   final RenameFolderUseCase _renameFolderUseCase;
   final DeleteFolderUseCase _deleteFolderUseCase;
+  final GetFoldersCountUseCase _getFoldersCountUseCase;
 
   FoldersProvider({
     required GetRootFoldersUseCase getRootFoldersUseCase,
@@ -29,15 +30,21 @@ class FoldersProvider extends ChangeNotifier {
     required CreateFolderUseCase createFolderUseCase,
     required RenameFolderUseCase renameFolderUseCase,
     required DeleteFolderUseCase deleteFolderUseCase,
+    required GetFoldersCountUseCase getFoldersCountUseCase,
   })  : _getRootFoldersUseCase = getRootFoldersUseCase,
         _getFolderContentUseCase = getFolderContentUseCase,
         _createFolderUseCase = createFolderUseCase,
         _renameFolderUseCase = renameFolderUseCase,
-        _deleteFolderUseCase = deleteFolderUseCase;
+        _deleteFolderUseCase = deleteFolderUseCase, 
+        _getFoldersCountUseCase = getFoldersCountUseCase;
 
   // Estado
   FoldersState _state = FoldersState.initial;
   FoldersState get state => _state;
+  
+  // Estado Count
+  int _foldersCount = 0;
+  int get foldersCount => _foldersCount;
 
   // Dados
   List<FolderEntity> _folders = [];
@@ -100,7 +107,6 @@ class FoldersProvider extends ChangeNotifier {
   /// Cria nova pasta
   Future<bool> createFolder(
     String name, {
-    String? parentPath,
     String? parentId,
   }) async {
     _setState(FoldersState.creating);
@@ -108,7 +114,6 @@ class FoldersProvider extends ChangeNotifier {
 
     final result = await _createFolderUseCase(
       name,
-      parentPath: parentPath,
       parentId: parentId,
     );
 
@@ -201,6 +206,21 @@ class FoldersProvider extends ChangeNotifier {
     );
 
     return success;
+  }
+
+  /// Obtém contagem total de pastas
+  Future<void> getFoldersCount() async {
+    final result = await _getFoldersCountUseCase();
+
+    result.fold(
+      (failure){
+        _setError(_mapFailureToMessage(failure));
+      },
+      (count){
+        _foldersCount = count;
+        notifyListeners();
+      }
+    );
   }
 
   /// Limpa erro

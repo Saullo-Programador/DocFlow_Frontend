@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -67,15 +69,18 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> saveUserData(Map<String, dynamic> userData) async {
     // Salvar como JSON string no SharedPreferences
-    await _sharedPreferences.setString(_userDataKey, userData.toString());
+    await _sharedPreferences.setString(_userDataKey, jsonEncode(userData));
   }
 
   @override
   Future<Map<String, dynamic>?> getUserData() async {
     final data = _sharedPreferences.getString(_userDataKey);
     if (data == null) return null;
-    // Implementar parsing adequado se salvar como JSON
-    return {};
+    try {
+      return jsonDecode(data) as Map<String, dynamic>;
+    } catch (e) {
+      return null;
+    }
   }
 
   @override

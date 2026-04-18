@@ -33,10 +33,9 @@ class CreateFolderUseCase {
 
   Future<Either<Failure, FolderEntity>> call(
     String name, {
-    String? parentPath,
     String? parentId,
   }) {
-    return _repository.createFolder(name, parentPath: parentPath, parentId: parentId);
+    return _repository.createFolder(name, parentId: parentId);
   }
 }
 

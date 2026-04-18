@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:manege_doc/constants.dart';
+import 'package:manege_doc/core/constants/app_constants.dart';
 import 'package:manege_doc/responsive/responsive.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -13,7 +13,7 @@ class ProfileScreen extends StatelessWidget {
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: EdgeInsets.all(isMobile ? 16 : defaultPadding),
+        padding: EdgeInsets.all(isMobile ? 16 : AppConstants.defaultPadding),
         child: Center(
           child: Container(
             width: isDesktop ? 900 : double.infinity,

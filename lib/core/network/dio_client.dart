@@ -16,7 +16,7 @@ class DioClient {
   final Logger _logger;
 
   DioClient({
-    required AuthInterceptor authInterceptor,
+    AuthInterceptor? authInterceptor,
     required Logger logger,
     String? baseUrl,
   }) : _logger = logger {
@@ -34,10 +34,15 @@ class DioClient {
     );
 
     // Adicionar interceptors
-    _dio.interceptors.addAll([
-      authInterceptor,
+    final interceptors = <Interceptor>[
       LoggingInterceptor(logger: _logger),
-    ]);
+    ];
+
+    if (authInterceptor != null) {
+      interceptors.insert(0, authInterceptor);
+    }
+
+    _dio.interceptors.addAll(interceptors);
   }
 
   /// Getter para acesso direto ao Dio (se necessário)

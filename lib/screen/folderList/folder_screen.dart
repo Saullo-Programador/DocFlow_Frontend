@@ -1,15 +1,47 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:manege_doc/api/api.dart';
-import 'package:manege_doc/constants.dart';
-import 'package:manege_doc/models/Item_model.dart';
+import 'package:manege_doc/core/constants/app_constants.dart';
+import 'package:manege_doc/features/files/domain/entities/file_entity.dart';
+import 'package:manege_doc/features/files/presentation/providers/files_provider.dart';
+import 'package:manege_doc/features/folders/domain/entities/folder_entity.dart';
+import 'package:manege_doc/features/folders/presentation/providers/folders_provider.dart';
+import 'package:manege_doc/features/search/presentation/providers/search_provider.dart';
 import 'package:manege_doc/responsive/responsive.dart';
 import 'package:manege_doc/screen/folderList/components/item_file.dart';
 import 'package:manege_doc/screen/folderList/components/item_folder.dart';
 import 'package:manege_doc/screen/folderList/components/new_folder_dialog.dart';
 import 'package:manege_doc/screen/folderList/components/top_bar_folder.dart';
 import 'package:manege_doc/screen/folderList/components/upload_document_dialog.dart';
+import 'package:provider/provider.dart';
+
+/// Modelo de união para itens da lista
+sealed class FolderItem {
+  final String name;
+  final String path;
+
+  const FolderItem({required this.name, required this.path});
+}
+
+class FolderItemFolder extends FolderItem {
+  final FolderEntity folder;
+
+  const FolderItemFolder({
+    required this.folder,
+    required super.name,
+    required super.path,
+  });
+}
+
+class FolderItemFile extends FolderItem {
+  final FileEntity file;
+
+  const FolderItemFile({
+    required this.file,
+    required super.name,
+    required super.path,
+  });
+}
 
 class FolderScreen extends StatefulWidget {
   const FolderScreen({super.key});
@@ -20,17 +52,9 @@ class FolderScreen extends StatefulWidget {
 
 class _FolderScreenState extends State<FolderScreen> {
   final TextEditingController searchController = TextEditingController();
-  @override
-  void dispose() {
-    searchController.dispose();
-    _debounce?.cancel();
-    super.dispose();
-  }
-
   Timer? _debounce;
   bool isSearching = false;
-  String currentPath = "";
-  List<ItemModel> items = [];
+  List<FolderItem> items = [];
 
   List<String> navigationStack = [""];
 
@@ -40,17 +64,47 @@ class _FolderScreenState extends State<FolderScreen> {
     _loadFolder("");
   }
 
+  @override
+  void dispose() {
+    searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   Future<void> _loadFolder(String path) async {
-    final folderContent = await Api().getFolderContent(path);
+    final foldersProvider = context.read<FoldersProvider>();
+
+    await foldersProvider.getFolderContent(path);
 
     if (!mounted) return;
 
+    // Converte para lista de items unificada
+    final newItems = <FolderItem>[];
+
+    // Adiciona pastas
+    for (final folder in foldersProvider.folders) {
+      newItems.add(
+        FolderItemFolder(
+          folder: folder,
+          name: folder.name,
+          path: folder.fullPath,
+        ),
+      );
+    }
+
+    // Adiciona arquivos
+    for (final file in foldersProvider.files) {
+      newItems.add(
+        FolderItemFile(file: file, name: file.name, path: file.fullPath),
+      );
+    }
+
     setState(() {
-      currentPath = path;
-      items = folderContent;
+      items = newItems;
+      isSearching = false;
     });
 
-    print("Itens recebidos: ${folderContent.length}");
+    print("Itens recebidos: ${items.length}");
   }
 
   void _openFolder(String newPath) {
@@ -65,32 +119,71 @@ class _FolderScreenState extends State<FolderScreen> {
     }
   }
 
-  void _download(String path) {
-    Api().download(path);
+  Future<void> _download(String path) async {
+    final filesProvider = context.read<FilesProvider>();
+    await filesProvider.downloadFile(path);
+
+    if (mounted && filesProvider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Erro no download: ${filesProvider.errorMessage}"),
+        ),
+      );
+    }
   }
 
   Future<void> _searchGlobal(String query) async {
+    final searchProvider = context.read<SearchProvider>();
+
     if (query.trim().isEmpty) {
       setState(() {
         isSearching = false;
       });
 
-      _loadFolder(currentPath);
+      _loadFolder(navigationStack.last);
       return;
     }
 
-    try {
-      final results = await Api().searchGlobal(query.trim());
+    await searchProvider.search(query.trim());
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      setState(() {
-        isSearching = true;
-        items = results.cast<ItemModel>();
-      });
-    } catch (e) {
-      debugPrint("Erro na busca: $e");
+    // Converte resultados de busca para items
+    final searchItems = <FolderItem>[];
+    for (final result in searchProvider.results) {
+      if (result.isFolder) {
+        searchItems.add(
+          FolderItemFolder(
+            folder: FolderEntity(
+              id: result.id,
+              name: result.name,
+              path: result.path,
+            ),
+            name: result.name,
+            path: result.path,
+          ),
+        );
+      } else {
+        searchItems.add(
+          FolderItemFile(
+            file: FileEntity(
+              id: result.id,
+              name: result.name,
+              path: result.path,
+              size: 0,
+              mimeType: 'application/octet-stream',
+            ),
+            name: result.name,
+            path: result.path,
+          ),
+        );
+      }
     }
+
+    setState(() {
+      isSearching = true;
+      items = searchItems;
+    });
   }
 
   void _onSearchChanged(String query) {
@@ -123,23 +216,22 @@ class _FolderScreenState extends State<FolderScreen> {
 
     if (confirm != true) return;
 
-    try {
-      await Api().deleteFile(path);
+    if (!mounted) return;
 
-      if (!mounted) return;
+    final filesProvider = context.read<FilesProvider>();
+    final success = await filesProvider.deleteFile(path);
 
-      await _loadFolder(currentPath);
+    if (!mounted) return;
+
+    if (success) {
+      await _loadFolder(navigationStack.last);
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Arquivo deletado com sucesso")),
       );
-    } catch (e) {
-      debugPrint("Erro ao deletar: $e");
-
-      if (!mounted) return;
-
+    } else {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Erro ao deletar arquivo")));
@@ -147,6 +239,7 @@ class _FolderScreenState extends State<FolderScreen> {
   }
 
   Future<void> _deleteFolder(String path) async {
+    final foldersProvider = context.read<FoldersProvider>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -167,24 +260,19 @@ class _FolderScreenState extends State<FolderScreen> {
     );
 
     if (confirm != true) return;
+    final success = await foldersProvider.deleteFolder(path);
 
-    try {
-      await Api().deleteFolder(path);
+    if (!mounted) return;
 
-      if (!mounted) return;
-
-      await _loadFolder(currentPath);
+    if (success) {
+      await _loadFolder(navigationStack.last);
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Pasta deletada com sucesso")),
       );
-    } catch (e) {
-      debugPrint("Erro ao deletar: $e");
-
-      if (!mounted) return;
-
+    } else {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Erro ao deletar Pasta")));
@@ -192,25 +280,54 @@ class _FolderScreenState extends State<FolderScreen> {
   }
 
   void _createNewFolder() async {
+    final foldersProvider = context.read<FoldersProvider>();
     final result = await showDialog<String>(
       context: context,
       builder: (_) => const NewFolderDialog(),
     );
 
     if (result != null && result.trim().isNotEmpty) {
-      await Api().createFolder(
-        currentPath.isEmpty ? result.trim() : "$currentPath/${result.trim()}",
+      final currentPath = navigationStack.last;
+      // Obtém o ID da pasta atual do breadcrumb (última pasta na navegação)
+      final currentFolderId = foldersProvider.currentFolder?.id;
+
+      final success = await foldersProvider.createFolder(
+        result.trim(),
+        parentId: currentFolderId,
       );
 
-      await _loadFolder(currentPath);
+      if (!success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                foldersProvider.errorMessage ?? "Erro ao criar pasta",
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (mounted) {
+        await _loadFolder(currentPath);
+      }
+
+      if (mounted) {
+        await _loadFolder(currentPath);
+      }
     }
   }
 
   void _openUploadDialog() {
     showDialog(
       context: context,
-      builder: (_) => UploadDocumentDialog(currentPath: currentPath),
-    );
+      builder: (_) => UploadDocumentDialog(currentPath: navigationStack.last),
+    ).then((result) {
+      if (result == true) {
+        _loadFolder(navigationStack.last);
+      }
+    });
   }
 
   @override
@@ -218,16 +335,17 @@ class _FolderScreenState extends State<FolderScreen> {
     final theme = Theme.of(context);
     final isMobile = Responsive.isMobile(context);
     final isDesktop = Responsive.isDesktop(context);
+    final foldersProvider = context.watch<FoldersProvider>();
+    final isLoading = foldersProvider.state == FoldersState.loading;
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: EdgeInsets.all(isMobile ? 16 : defaultPadding),
+        padding: EdgeInsets.all(isMobile ? 16 : AppConstants.defaultPadding),
         child: Center(
           child: Container(
             width: double.infinity,
             constraints: const BoxConstraints(maxWidth: 1200),
             decoration: BoxDecoration(
-              
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
@@ -294,49 +412,67 @@ class _FolderScreenState extends State<FolderScreen> {
                           child: Row(
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                                icon: const Icon(
+                                  Icons.arrow_back_rounded,
+                                  size: 18,
+                                ),
                                 style: ButtonStyle(
                                   backgroundColor: WidgetStateProperty.all(
                                     navigationStack.length > 1
-                                        ? primaryColor.withValues(alpha: 0.1)
+                                        ? AppConstants.primaryColor.withValues(
+                                            alpha: 0.1,
+                                          )
                                         : Colors.grey.withValues(alpha: 0.1),
                                   ),
                                 ),
-                                onPressed: navigationStack.length > 1 ? _goBack : null,
+                                onPressed: navigationStack.length > 1
+                                    ? _goBack
+                                    : null,
                               ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Wrap(
-                                  children: List.generate(navigationStack.length, (index) {
-                                    final folder = navigationStack[index].isEmpty
-                                        ? "Home"
-                                        : navigationStack[index].split("/").last;
+                                  children: List.generate(
+                                    navigationStack.length,
+                                    (index) {
+                                      final folder =
+                                          navigationStack[index].isEmpty
+                                          ? "Home"
+                                          : navigationStack[index]
+                                                .split("/")
+                                                .last;
 
-                                    return Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        GestureDetector(
-                                          onTap: () {
-                                            navigationStack = navigationStack.sublist(
-                                              0,
-                                              index + 1,
-                                            );
-                                            _loadFolder(navigationStack.last);
-                                          },
-                                          child: Text(
-                                            folder,
-                                            style: TextStyle(
-                                              color: primaryColor,
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: isMobile ? 14 : 16,
+                                      return Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                navigationStack =
+                                                    navigationStack.sublist(
+                                                      0,
+                                                      index + 1,
+                                                    );
+                                              });
+                                              _loadFolder(navigationStack.last);
+                                            },
+                                            child: Text(
+                                              folder,
+                                              style: TextStyle(
+                                                color:
+                                                    AppConstants.primaryColor,
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: isMobile ? 14 : 16,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        if (index != navigationStack.length - 1)
-                                          const Text(" > "),
-                                      ],
-                                    );
-                                  }),
+                                          if (index !=
+                                              navigationStack.length - 1)
+                                            const Text(" > "),
+                                        ],
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
                             ],
@@ -364,7 +500,9 @@ class _FolderScreenState extends State<FolderScreen> {
                         // Lista de itens
                         SizedBox(
                           height: 500,
-                          child: items.isEmpty
+                          child: isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : items.isEmpty
                               ? const Center(
                                   child: Text(
                                     "Nenhum item encontrado",
@@ -378,15 +516,16 @@ class _FolderScreenState extends State<FolderScreen> {
                                 )
                               : LayoutBuilder(
                                   builder: (context, constraints) {
-                                    if (isDesktop && constraints.maxWidth > 800) {
+                                    if (isDesktop &&
+                                        constraints.maxWidth > 800) {
                                       return GridView.builder(
                                         gridDelegate:
                                             const SliverGridDelegateWithMaxCrossAxisExtent(
-                                          maxCrossAxisExtent: 300,
-                                          childAspectRatio: 3,
-                                          crossAxisSpacing: 12,
-                                          mainAxisSpacing: 12,
-                                        ),
+                                              maxCrossAxisExtent: 300,
+                                              childAspectRatio: 3,
+                                              crossAxisSpacing: 12,
+                                              mainAxisSpacing: 12,
+                                            ),
                                         itemCount: items.length,
                                         itemBuilder: (context, index) {
                                           final item = items[index];
@@ -416,22 +555,23 @@ class _FolderScreenState extends State<FolderScreen> {
     );
   }
 
-  Widget _buildItem(ItemModel item) {
-    if (item.type == ItemType.folder) {
-      return ItemFolder(
-        folderName: item.name,
-        onTap: () => _openFolder(item.path),
-        onDeleteFolder: () => _deleteFolder(item.path),
-        onEditFolder: () {},
-      );
+  Widget _buildItem(FolderItem item) {
+    switch (item) {
+      case FolderItemFolder folderItem:
+        return ItemFolder(
+          folderName: folderItem.name,
+          onTap: () => _openFolder(folderItem.path),
+          onDeleteFolder: () => _deleteFolder(folderItem.path),
+          onEditFolder: () {},
+        );
+      case FolderItemFile fileItem:
+        return ItemFile(
+          fileName: fileItem.name,
+          onTap: () {},
+          onDeleteFile: () => _deleteFile(fileItem.path),
+          onDownloadFile: () => _download(fileItem.path),
+          onMoverFile: () {},
+        );
     }
-
-    return ItemFile(
-      fileName: item.name,
-      onTap: () {},
-      onDeleteFile: () => _deleteFile(item.path),
-      onDownloadFile: () => _download(item.path),
-      onMoverFile: () {},
-    );
   }
 }

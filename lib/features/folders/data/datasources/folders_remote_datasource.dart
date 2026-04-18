@@ -11,7 +11,7 @@ abstract class FoldersRemoteDataSource {
   Future<FolderContentModel> getFolderContent(String path);
 
   /// Cria nova pasta
-  Future<FolderModel> createFolder(String path, {String? parentId});
+  Future<FolderModel> createFolder(String name, {String? parentId});
 
   /// Obtém pastas filhas de uma pasta
   Future<List<FolderModel>> getChildFolders(String parentId);
@@ -44,7 +44,7 @@ class FoldersRemoteDataSourceImpl implements FoldersRemoteDataSource {
   final DioClient _dioClient;
 
   FoldersRemoteDataSourceImpl({required DioClient dioClient})
-      : _dioClient = dioClient;
+    : _dioClient = dioClient;
 
   @override
   Future<List<String>> getRootFolders() async {
@@ -67,12 +67,9 @@ class FoldersRemoteDataSourceImpl implements FoldersRemoteDataSource {
 
     final data = response.data as Map<String, dynamic>;
 
-    final folders = (data['folders'] as List<dynamic>?)
-            ?.map((f) => FolderModel(
-                  id: f.toString(),
-                  name: f.toString().split('/').last,
-                  path: f.toString(),
-                ))
+    final folders =
+        (data['folders'] as List<dynamic>?)
+            ?.map((f) => FolderModel.fromJson(f as Map<String, dynamic>))
             .toList() ??
         [];
 
@@ -84,20 +81,23 @@ class FoldersRemoteDataSourceImpl implements FoldersRemoteDataSource {
   }
 
   @override
-  Future<FolderModel> createFolder(String path, {String? parentId}) async {
-    await _dioClient.post(
+  Future<FolderModel> createFolder(String name, {String? parentId}) async {
+    print("CRIANDO PASTA:");
+    print("name: $name");
+    print("parentId: $parentId");
+
+    final response = await _dioClient.post(
       '${ApiConstants.documentsBase}/folders',
-      queryParameters: {'path': path},
+      data: {
+        'name': name,
+        if (parentId != null) 'parentId': int.parse(parentId),
+      },
     );
 
-    // Criar modelo de resposta (API não retorna o objeto completo)
-    final folderName = path.split('/').last;
-    return FolderModel(
-      id: path,
-      name: folderName,
-      path: path,
-      parentId: parentId,
-    );
+    print("STATUS: ${response.statusCode}");
+    print("RESPONSE: ${response.data}");
+
+    return FolderModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override

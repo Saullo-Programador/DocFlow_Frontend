@@ -121,8 +121,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
       // Reconstruir entidade
       return Right(UserEntity(
-        id: userData['id'] ?? '',
-        email: userData['email'] ?? '',
+        id: userData['id']?.toString() ?? '',
+        email: userData['email']?.toString() ?? '',
+        name: userData['name']?.toString(),
+        role: userData['role']?.toString(),
+        avatarUrl: userData['avatarUrl']?.toString(),
       ));
     } catch (e) {
       return const Left(CacheFailure('Erro ao obter usuário'));

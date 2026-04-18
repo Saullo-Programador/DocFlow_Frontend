@@ -11,20 +11,24 @@ class FoldersRepositoryImpl implements FoldersRepository {
   final FoldersRemoteDataSource _remoteDataSource;
 
   FoldersRepositoryImpl({required FoldersRemoteDataSource remoteDataSource})
-      : _remoteDataSource = remoteDataSource;
+    : _remoteDataSource = remoteDataSource;
 
   @override
   Future<Either<Failure, List<FolderEntity>>> getRootFolders() async {
     try {
       final folders = await _remoteDataSource.getRootFolders();
       // Converter strings para entidades
-      return Right(folders
-          .map((path) => FolderEntity(
+      return Right(
+        folders
+            .map(
+              (path) => FolderEntity(
                 id: path,
                 name: path.split('/').last,
                 path: path,
-              ))
-          .toList());
+              ),
+            )
+            .toList(),
+      );
     } on ConnectionException {
       return const Left(ConnectionFailure());
     } on ApiException catch (e) {
@@ -44,11 +48,13 @@ class FoldersRepositoryImpl implements FoldersRepository {
           .map((f) => FileModel.fromJson(f as Map<String, dynamic>).toEntity())
           .toList();
 
-      return Right(FolderContent(
-        folders: folders,
-        files: files,
-        currentPath: content.currentPath,
-      ));
+      return Right(
+        FolderContent(
+          folders: folders,
+          files: files,
+          currentPath: content.currentPath,
+        ),
+      );
     } on ConnectionException {
       return const Left(ConnectionFailure());
     } on NotFoundException {
@@ -63,15 +69,13 @@ class FoldersRepositoryImpl implements FoldersRepository {
   @override
   Future<Either<Failure, FolderEntity>> createFolder(
     String name, {
-    String? parentPath,
     String? parentId,
   }) async {
     try {
-      final path = parentPath != null && parentPath.isNotEmpty
-          ? '$parentPath/$name'
-          : name;
-
-      final folder = await _remoteDataSource.createFolder(path, parentId: parentId);
+      final folder = await _remoteDataSource.createFolder(
+        name,
+        parentId: parentId,
+      );
       return Right(folder.toEntity());
     } on ConnectionException {
       return const Left(ConnectionFailure());
@@ -85,7 +89,9 @@ class FoldersRepositoryImpl implements FoldersRepository {
   }
 
   @override
-  Future<Either<Failure, List<FolderEntity>>> getChildFolders(String parentId) async {
+  Future<Either<Failure, List<FolderEntity>>> getChildFolders(
+    String parentId,
+  ) async {
     try {
       final folders = await _remoteDataSource.getChildFolders(parentId);
       return Right(folders.map((m) => m.toEntity()).toList());

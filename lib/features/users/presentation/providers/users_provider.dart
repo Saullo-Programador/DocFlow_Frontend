@@ -18,20 +18,27 @@ class UsersProvider extends ChangeNotifier {
   final GetAllUsersUseCase _getAllUsersUseCase;
   final UpdateProfileUseCase _updateProfileUseCase;
   final ChangePasswordUseCase _changePasswordUseCase;
+  final GetUsersCountUseCase _getUsersCountUseCase;
 
   UsersProvider({
     required GetCurrentUserProfileUseCase getCurrentUserProfileUseCase,
     required GetAllUsersUseCase getAllUsersUseCase,
     required UpdateProfileUseCase updateProfileUseCase,
     required ChangePasswordUseCase changePasswordUseCase,
+    required GetUsersCountUseCase getUsersCountUseCase,
   })  : _getCurrentUserProfileUseCase = getCurrentUserProfileUseCase,
         _getAllUsersUseCase = getAllUsersUseCase,
         _updateProfileUseCase = updateProfileUseCase,
-        _changePasswordUseCase = changePasswordUseCase;
+        _changePasswordUseCase = changePasswordUseCase,
+        _getUsersCountUseCase = getUsersCountUseCase;
 
   // Estado
   UsersState _state = UsersState.initial;
   UsersState get state => _state;
+
+  // Estado Count
+  int _usersCount = 0;
+  int get usersCount => _usersCount;
 
   // Dados
   UserProfileEntity? _currentUser;
@@ -133,6 +140,19 @@ class UsersProvider extends ChangeNotifier {
     );
 
     return success;
+  }
+
+  Future<void> getUsersCount() async {
+    final result = await _getUsersCountUseCase();
+    result.fold(
+      (failure) {
+        _setError(_mapFailureToMessage(failure));
+      },
+      (count) {
+        _usersCount = count;
+        notifyListeners();
+      },
+    );
   }
 
   /// Limpa erro

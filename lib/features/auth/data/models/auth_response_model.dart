@@ -34,6 +34,7 @@ class UserModel {
   final String id;
   final String email;
   final String? name;
+  final String? role;
   final String? avatarUrl;
   final DateTime? createdAt;
 
@@ -41,6 +42,7 @@ class UserModel {
     required this.id,
     required this.email,
     this.name,
+    this.role,
     this.avatarUrl,
     this.createdAt,
   });
@@ -50,6 +52,7 @@ class UserModel {
       id: json['id']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       name: json['name']?.toString(),
+      role: json['role']?.toString(),
       avatarUrl: json['avatarUrl']?.toString(),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString())
@@ -62,6 +65,7 @@ class UserModel {
       'id': id,
       'email': email,
       if (name != null) 'name': name,
+      if (role != null) 'role': role,
       if (avatarUrl != null) 'avatarUrl': avatarUrl,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
     };
@@ -73,6 +77,7 @@ class UserModel {
       id: id,
       email: email,
       name: name,
+      role: role,
       avatarUrl: avatarUrl,
       createdAt: createdAt,
     );

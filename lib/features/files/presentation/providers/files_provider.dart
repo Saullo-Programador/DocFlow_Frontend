@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:manege_doc/features/folders/domain/usecases/folders_usecases.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/file_entity.dart';
 import '../../domain/usecases/files_usecases.dart';
@@ -23,6 +24,7 @@ class FilesProvider extends ChangeNotifier {
   final RenameFileUseCase _renameFileUseCase;
   final MoveFileUseCase _moveFileUseCase;
   final GetLatestUploadsUseCase _getLatestUploadsUseCase;
+  final GetFoldersCountUseCase _getFoldersCountUseCase;
 
   FilesProvider({
     required GetFilesUseCase getFilesUseCase,
@@ -32,17 +34,23 @@ class FilesProvider extends ChangeNotifier {
     required RenameFileUseCase renameFileUseCase,
     required MoveFileUseCase moveFileUseCase,
     required GetLatestUploadsUseCase getLatestUploadsUseCase,
+    required GetFoldersCountUseCase getFoldersCountUseCase,
   })  : _getFilesUseCase = getFilesUseCase,
         _uploadFileUseCase = uploadFileUseCase,
         _downloadFileUseCase = downloadFileUseCase,
         _deleteFileUseCase = deleteFileUseCase,
         _renameFileUseCase = renameFileUseCase,
         _moveFileUseCase = moveFileUseCase,
-        _getLatestUploadsUseCase = getLatestUploadsUseCase;
+        _getLatestUploadsUseCase = getLatestUploadsUseCase,
+        _getFoldersCountUseCase = getFoldersCountUseCase;
 
   // Estado
   FilesState _state = FilesState.initial;
   FilesState get state => _state;
+
+  // Estado Count
+  int _filesCount = 0;
+  int get filesCount => _filesCount;
 
   // Dados
   List<FileEntity> _files = [];
@@ -212,6 +220,20 @@ class FilesProvider extends ChangeNotifier {
       (failure) => _setError(_mapFailureToMessage(failure)),
       (files) {
         _latestUploads = files;
+        notifyListeners();
+      },
+    );
+  }
+
+  Future<void> getFilesCount() async{
+    final result = await _getFoldersCountUseCase();
+    
+    result.fold(
+      (failure){
+        _setError(_mapFailureToMessage(failure));
+      },
+      (count){
+        _filesCount = count;
         notifyListeners();
       },
     );

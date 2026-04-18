@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import '../../../features/auth/data/datasources/auth_local_datasource.dart';
+import '../../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../constants/api_constants.dart';
 import '../../errors/api_exception.dart';
 
@@ -11,12 +12,14 @@ import '../../errors/api_exception.dart';
 /// 3. Fazer logout em caso de 401
 class AuthInterceptor extends Interceptor {
   final AuthLocalDataSource _localDataSource;
+  final AuthRemoteDataSource _remoteDataSource;
   final Logger _logger;
 
   // Lista de paths que não precisam de autenticação
   final List<String> _publicPaths = [
     '/auth/register',
     '/auth/login',
+    '/auth/refresh',
     '/auth/forgot-password',
     '/auth/reset-password',
     '/auth/verify-code',
@@ -30,8 +33,10 @@ class AuthInterceptor extends Interceptor {
 
   AuthInterceptor({
     required AuthLocalDataSource localDataSource,
+    required AuthRemoteDataSource remoteDataSource,
     required Logger logger,
   })  : _localDataSource = localDataSource,
+        _remoteDataSource = remoteDataSource,
         _logger = logger;
 
   @override
@@ -110,8 +115,16 @@ class AuthInterceptor extends Interceptor {
             requestOptions.headers[ApiConstants.authorizationHeader] =
                 '${ApiConstants.bearerPrefix} $newToken';
 
-            // Criar novo Dio para retry
-            final dio = Dio();
+            // Retry com novo token usando Dio configurado corretamente
+            final dio = Dio(
+              BaseOptions(
+                baseUrl: err.requestOptions.baseUrl,
+                connectTimeout: err.requestOptions.connectTimeout,
+                receiveTimeout: err.requestOptions.receiveTimeout,
+                sendTimeout: err.requestOptions.sendTimeout,
+                headers: err.requestOptions.headers,
+              ),
+            );
             final response = await dio.fetch(requestOptions);
 
             _isRefreshing = false;
@@ -140,7 +153,16 @@ class AuthInterceptor extends Interceptor {
         requestOptions.headers[ApiConstants.authorizationHeader] =
             '${ApiConstants.bearerPrefix} $newToken';
 
-        final dio = Dio();
+        // Retry com novo token usando Dio configurado corretamente
+        final dio = Dio(
+          BaseOptions(
+            baseUrl: err.requestOptions.baseUrl,
+            connectTimeout: err.requestOptions.connectTimeout,
+            receiveTimeout: err.requestOptions.receiveTimeout,
+            sendTimeout: err.requestOptions.sendTimeout,
+            headers: err.requestOptions.headers,
+          ),
+        );
         final response = await dio.fetch(requestOptions);
         handler.resolve(response);
         return;
@@ -161,15 +183,31 @@ class AuthInterceptor extends Interceptor {
     return path.toLowerCase().contains('/auth/');
   }
 
-  /// Tenta fazer refresh do token
+  /// Tenta fazer refresh do token chamando a API
   Future<bool> _refreshToken() async {
     try {
-      // Implementar endpoint de refresh token se disponível na API
-      // Por enquanto, apenas verifica se há refresh token
       final refreshToken = await _localDataSource.getRefreshToken();
-      return refreshToken != null && refreshToken.isNotEmpty;
+
+      if (refreshToken == null || refreshToken.isEmpty) {
+        _logger.w('Nenhum refresh token disponível');
+        return false;
+      }
+
+      _logger.i('Chamando API para refresh do token');
+
+      // Chamar API de refresh
+      final authResponse = await _remoteDataSource.refreshToken(refreshToken);
+
+      // Salvar novos tokens
+      await _localDataSource.saveAccessToken(authResponse.accessToken);
+      if (authResponse.refreshToken != null) {
+        await _localDataSource.saveRefreshToken(authResponse.refreshToken!);
+      }
+
+      _logger.i('Token atualizado com sucesso');  
+      return true;
     } catch (e) {
-      _logger.e('Erro no refresh: $e');
+      _logger.e('Erro ao fazer refresh do token: $e');
       return false;
     }
   }

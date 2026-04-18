@@ -53,19 +53,17 @@ class SideMenu extends StatelessWidget {
   BoxDecoration _buildContainerDecoration() {
     return BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       boxShadow: [
         BoxShadow(
-          color: Colors.grey.withValues(alpha: 0.5),
-          spreadRadius: 2,
-          blurRadius: 5,
-          offset: const Offset(0, 3),
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 24,
+          offset: const Offset(0, 8),
         ),
       ],
     );
   }
 }
-
 
 class DrawerListTile extends StatelessWidget {
   const DrawerListTile({
@@ -98,10 +96,7 @@ class DrawerListTile extends StatelessWidget {
             mainAxisAlignment: isDesktop
                 ? MainAxisAlignment.start
                 : MainAxisAlignment.center,
-            children: [
-              _buildIcon(),
-              if (isDesktop) _buildTitle(),
-            ],
+            children: [_buildIcon(), if (isDesktop) _buildTitle()],
           ),
         ),
       ),
@@ -132,8 +127,7 @@ class DrawerListTile extends StatelessWidget {
         title,
         style: TextStyle(
           fontSize: 15,
-          fontWeight:
-              isSelected ? FontWeight.w600 : FontWeight.normal,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           color: isSelected ? Colors.blue : Colors.black87,
         ),
       ),

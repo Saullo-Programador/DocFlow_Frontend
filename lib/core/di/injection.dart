@@ -73,15 +73,31 @@ void _initCore() {
     ),
   );
 
-  // Interceptors
+  // Dio Client básico para auth (sem interceptors para evitar circularidade)
+  sl.registerLazySingleton<DioClient>(
+    () => DioClient(
+      logger: sl(),
+    ),
+    instanceName: 'authDio',
+  );
+
+  // Auth Remote Data Source (usando Dio básico)
+  sl.registerLazySingleton<AuthRemoteDataSource>(
+    () => AuthRemoteDataSourceImpl(
+      dioClient: sl(instanceName: 'authDio'),
+    ),
+  );
+
+  // Interceptors (agora tem acesso ao AuthRemoteDataSource)
   sl.registerLazySingleton(
     () => AuthInterceptor(
       localDataSource: sl(),
+      remoteDataSource: sl(),
       logger: sl(),
     ),
   );
 
-  // Dio Client
+  // Dio Client principal (com auth interceptor)
   sl.registerLazySingleton<DioClient>(
     () => DioClient(
       authInterceptor: sl(),
@@ -92,10 +108,7 @@ void _initCore() {
 
 /// Inicializa dependências de autenticação
 void _initAuth() {
-  // Data sources
-  sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSourceImpl(dioClient: sl()),
-  );
+  // AuthRemoteDataSource já registrado em _initCore()
 
   // Repository
   sl.registerLazySingleton<AuthRepository>(
@@ -161,6 +174,7 @@ void _initFiles() {
     renameFileUseCase: sl(),
     moveFileUseCase: sl(),
     getLatestUploadsUseCase: sl(),
+    getFoldersCountUseCase: sl(),
   ));
 }
 
@@ -192,6 +206,7 @@ void _initFolders() {
     createFolderUseCase: sl(),
     renameFolderUseCase: sl(),
     deleteFolderUseCase: sl(),
+    getFoldersCountUseCase: sl(),
   ));
 }
 
@@ -272,5 +287,6 @@ void _initUsers() {
     getAllUsersUseCase: sl(),
     updateProfileUseCase: sl(),
     changePasswordUseCase: sl(),
+    getUsersCountUseCase: sl(),
   ));
 }

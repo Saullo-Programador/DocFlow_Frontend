@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:manege_doc/constants.dart';
+import 'package:manege_doc/core/constants/app_constants.dart';
 
 class ItemFile extends StatelessWidget {
   final String fileName;
@@ -12,7 +12,7 @@ class ItemFile extends StatelessWidget {
   const ItemFile({
     super.key, 
     this.fileName = "Nome do Arquivo", 
-    this.fileColor = primaryColor,
+    this.fileColor = AppConstants.primaryColor,
     required this.onDeleteFile, 
     required this.onDownloadFile, 
     required this.onMoverFile, 

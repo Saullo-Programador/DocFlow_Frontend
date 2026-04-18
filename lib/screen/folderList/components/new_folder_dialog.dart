@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:manege_doc/constants.dart';
+import 'package:manege_doc/core/constants/app_constants.dart';
 import 'package:manege_doc/responsive/responsive.dart';
 
 class NewFolderDialog extends StatefulWidget {
@@ -40,7 +40,7 @@ class _NewFolderDialogState extends State<NewFolderDialog> {
       content: SizedBox(
         width: dialogWidth * 0.7,
         child: TextField(
-          cursorColor: primaryColor,
+          cursorColor: AppConstants.primaryColor,
           controller: folderController,
           textInputAction: TextInputAction.done, // mostra botão "done"
           autofocus: true,
@@ -49,7 +49,7 @@ class _NewFolderDialogState extends State<NewFolderDialog> {
           },
           decoration: const InputDecoration(
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: primaryColor),
+              borderSide: BorderSide(color: AppConstants.primaryColor),
               borderRadius: BorderRadius.all(Radius.circular(8)),
             ),
             hintText: "Digite o nome da pasta",
@@ -80,7 +80,7 @@ class _NewFolderDialogState extends State<NewFolderDialog> {
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: primaryColor,
+            backgroundColor: AppConstants.primaryColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),

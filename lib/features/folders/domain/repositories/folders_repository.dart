@@ -26,7 +26,6 @@ abstract class FoldersRepository {
   /// Cria nova pasta
   Future<Either<Failure, FolderEntity>> createFolder(
     String name, {
-    String? parentPath,
     String? parentId,
   });
 
