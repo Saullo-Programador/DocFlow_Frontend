@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:manege_doc/core/constants/type_role.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/get_auth_status_usecase.dart';
@@ -115,13 +116,14 @@ class AuthProvider extends ChangeNotifier {
   /// Registra novo usuário
   Future<bool> register(
     String email,
+    TypeRole role,
     String password, {
     String? name,
   }) async {
     _setLoading(true);
     _clearError();
 
-    final result = await _registerUseCase(email, password, name: name);
+    final result = await _registerUseCase(email, role, password, name: name);
 
     final success = result.fold(
       (failure) {

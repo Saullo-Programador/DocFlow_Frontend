@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:manege_doc/core/constants/type_role.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/auth_entity.dart';
 import '../repositories/auth_repository.dart';
@@ -11,9 +12,11 @@ class RegisterUseCase {
 
   Future<Either<Failure, AuthEntity>> call(
     String email,
+    TypeRole role,
     String password, {
     String? name,
   }) {
-    return _repository.register(email, password, name: name);
+    return _repository.register(email, role, password, name: name);
   }
 }
+

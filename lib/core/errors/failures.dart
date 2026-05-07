@@ -54,7 +54,7 @@ class ValidationFailure extends Failure {
 
 /// Falha não esperada
 class UnexpectedFailure extends Failure {
-  const UnexpectedFailure() : super('Ocorreu um erro inesperado.');
+  const UnexpectedFailure() : super('Ocorreu um erro interno. Tente novamente mais tarde.');
 }
 
 /// Falha de recurso não encontrado

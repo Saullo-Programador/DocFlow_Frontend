@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:manege_doc/core/constants/type_role.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/auth_entity.dart';
 import '../entities/user_entity.dart';
@@ -11,6 +12,7 @@ abstract class AuthRepository {
   /// Registra novo usuário
   Future<Either<Failure, AuthEntity>> register(
     String email,
+    TypeRole role,
     String password, {
     String? name,
   });

@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -90,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: theme.primaryColor,
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 12),
 
                       // Título
                       Text(
@@ -101,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 6),
 
                       // Subtítulo
                       Text(
@@ -112,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 16),
 
                       // Campo de Usuário
                       CustomInput(
@@ -128,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
                       // Campo de Senha
                       CustomInput(
@@ -143,6 +144,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             return "Campo obrigatório";
                           }
                           return null;
+                        },
+                        obscureText: _obscurePassword,
+                        onToggleVisibility: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
                         },
                       ),
                       const SizedBox(height: 8),
@@ -186,7 +193,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: CustomButton(
                           text: "Entrar",
                           isLoading: authProvider.isLoading,
-                          onPressed: authProvider.isLoading? null : () =>_login(),
+                          onPressed: authProvider.isLoading
+                              ? null
+                              : () => _login(),
                         ),
                       ),
                       const SizedBox(height: 24),

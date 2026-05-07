@@ -1,21 +1,24 @@
 import 'package:equatable/equatable.dart';
+import 'package:manege_doc/core/constants/type_role.dart';
 
 /// Entidade de perfil de usuário
 class UserProfileEntity extends Equatable {
   final String id;
   final String email;
   final String? name;
+  final String? password;
   final String? avatarUrl;
   final DateTime? createdAt;
-  final bool isAdmin;
+  final TypeRole role;
 
   const UserProfileEntity({
     required this.id,
     required this.email,
     this.name,
+    this.password,
     this.avatarUrl,
     this.createdAt,
-    this.isAdmin = false,
+    this.role = TypeRole.USER,
   });
 
   String get displayName => name ?? email.split('@').first;
@@ -29,23 +32,25 @@ class UserProfileEntity extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, email, name, avatarUrl, createdAt, isAdmin];
+  List<Object?> get props => [id, email, name, password, avatarUrl, createdAt, role];
 
   UserProfileEntity copyWith({
     String? id,
     String? email,
     String? name,
+    String? password,
     String? avatarUrl,
     DateTime? createdAt,
-    bool? isAdmin,
+    TypeRole? role,
   }) {
     return UserProfileEntity(
       id: id ?? this.id,
       email: email ?? this.email,
       name: name ?? this.name,
+      password: password ?? this.password,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       createdAt: createdAt ?? this.createdAt,
-      isAdmin: isAdmin ?? this.isAdmin,
+      role: role ?? this.role,
     );
   }
 }

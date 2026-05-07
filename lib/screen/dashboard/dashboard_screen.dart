@@ -232,13 +232,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Theme.of(context).primaryColor.withValues(alpha: 0.05),//Colors.grey[200],
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color),
+          Icon(icon, color: color, size: 40),
           const Spacer(),
           Text(value, style: const TextStyle(fontSize: 22)),
           Text(title, style: TextStyle(color: Colors.grey[600])),

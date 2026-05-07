@@ -5,6 +5,8 @@ class CustomInput extends StatelessWidget {
   final String? hint;
   final IconData? icon;
   final bool isPassword;
+  final bool obscureText;
+  final VoidCallback? onToggleVisibility;
   final void Function(String)? onChanged;
   final TextEditingController? controller;
   final String? Function(String?)? validator;
@@ -16,6 +18,8 @@ class CustomInput extends StatelessWidget {
     this.hint,
     this.icon,
     this.isPassword = false,
+    this.obscureText = false,
+    this.onToggleVisibility,
     this.onChanged,
     this.controller,
     this.validator,
@@ -31,11 +35,11 @@ class CustomInput extends StatelessWidget {
           label,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 3),
         TextFormField(
           controller: controller,
           onChanged: onChanged,
-          obscureText: isPassword,
+          obscureText: isPassword ? obscureText : false,
           keyboardType: keyboardType,
           validator: validator,
           decoration: InputDecoration(
@@ -44,6 +48,15 @@ class CustomInput extends StatelessWidget {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            suffixIcon: isPassword
+                ? IconButton( 
+                    onPressed: onToggleVisibility,
+                    icon: Icon(
+                      obscureText ? Icons.visibility_off : Icons.visibility,
+                    ),
+                  )
+                : null,
+
             filled: true,
             fillColor: Colors.grey.withValues(alpha: 0.1),
           ),

@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:manege_doc/core/constants/type_role.dart';
 import '../../../../core/errors/api_exception.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/auth_entity.dart';
@@ -54,6 +55,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, AuthEntity>> register(
     String email,
+    TypeRole role,
     String password, {
     String? name,
   }) async {
@@ -62,6 +64,7 @@ class AuthRepositoryImpl implements AuthRepository {
         email: email,
         password: password,
         name: name,
+        role: role,
       );
       final response = await _remoteDataSource.register(request);
 

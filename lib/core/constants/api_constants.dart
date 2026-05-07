@@ -5,7 +5,7 @@ class ApiConstants {
   ApiConstants._();
 
   // Base URL - alterar conforme ambiente
-  static const String baseUrl = 'http://192.168.0.7:8080';
+  static const String baseUrl = 'http://localhost:8080/';
   static const String apiVersion = 'v1';
 
   // Endpoints base

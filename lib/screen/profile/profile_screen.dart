@@ -1,15 +1,70 @@
 import 'package:flutter/material.dart';
 import 'package:manege_doc/core/constants/app_constants.dart';
+import 'package:manege_doc/features/users/presentation/providers/users_provider.dart';
 import 'package:manege_doc/responsive/responsive.dart';
+import 'package:provider/provider.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late TextEditingController nameController;
+  late TextEditingController emailController;
+  late TextEditingController roleController;
+  late TextEditingController passwordController;
+  bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    nameController = TextEditingController();
+    emailController = TextEditingController();
+    roleController = TextEditingController();
+    passwordController = TextEditingController();
+
+    loadUser();
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    roleController.dispose();
+    passwordController.dispose();
+
+    super.dispose();
+  }
+
+  Future<void> loadUser() async {
+    final provider = context.read<UsersProvider>();
+
+    await provider.getCurrentUser();
+
+    final user = provider.currentUser;
+
+    if (user != null) {
+      nameController.text = user.name ?? "Usuário";
+      emailController.text = user.email;
+      roleController.text = user.role.label;
+      passwordController.text = user.password ?? "********";
+    }
+
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isMobile = Responsive.isMobile(context);
     final isDesktop = Responsive.isDesktop(context);
+
+    final userProvider = context.watch<UsersProvider>();
+    final user = userProvider.currentUser;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -81,7 +136,7 @@ class ProfileScreen extends StatelessWidget {
                             color: Colors.grey[800],
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Text(
                           "Gerencie suas informações pessoais",
                           style: theme.textTheme.bodyLarge?.copyWith(
@@ -101,7 +156,11 @@ class ProfileScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 flex: 1,
-                                child: _buildProfileCard(context),
+                                child: _buildProfileCard(
+                                  context,
+                                  email: user?.email ?? "usuario@email.com",
+                                  name: user?.name ?? "Usuário",
+                                ),
                               ),
                               const SizedBox(width: 32),
                               Expanded(
@@ -112,7 +171,11 @@ class ProfileScreen extends StatelessWidget {
                           )
                         : Column(
                             children: [
-                              _buildProfileCard(context),
+                              _buildProfileCard(
+                                context,
+                                email: user?.email ?? "usuario@email.com",
+                                name: user?.name ?? "Usuário",
+                              ),
                               const SizedBox(height: 24),
                               _buildProfileForm(context),
                             ],
@@ -127,7 +190,11 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileCard(BuildContext context) {
+  Widget _buildProfileCard(
+    BuildContext context, {
+    String email = "usuario@email.com",
+    String name = "Usuário",
+  }) {
     final theme = Theme.of(context);
 
     return Container(
@@ -146,11 +213,7 @@ class ProfileScreen extends StatelessWidget {
               CircleAvatar(
                 radius: 60,
                 backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
-                child: Icon(
-                  Icons.person,
-                  size: 60,
-                  color: theme.primaryColor,
-                ),
+                child: Icon(Icons.person, size: 60, color: theme.primaryColor),
               ),
               Positioned(
                 bottom: 0,
@@ -169,18 +232,13 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            "Usuário",
+            name,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            "usuario@email.com",
-            style: TextStyle(
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(email, style: TextStyle(color: Colors.grey[600])),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () {},
@@ -219,6 +277,7 @@ class ProfileScreen extends StatelessWidget {
           label: "Nome",
           hint: "Digite seu nome",
           icon: Icons.person_outline,
+          controller: nameController,
         ),
         const SizedBox(height: 16),
         _buildTextField(
@@ -227,21 +286,7 @@ class ProfileScreen extends StatelessWidget {
           hint: "Digite seu e-mail",
           icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          context,
-          label: "Telefone",
-          hint: "Digite seu telefone",
-          icon: Icons.phone_outlined,
-          keyboardType: TextInputType.phone,
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          context,
-          label: "Empresa",
-          hint: "Digite o nome da empresa",
-          icon: Icons.business_outlined,
+          controller: emailController,
         ),
         const SizedBox(height: 16),
         _buildTextField(
@@ -249,6 +294,22 @@ class ProfileScreen extends StatelessWidget {
           label: "Cargo",
           hint: "Digite seu cargo",
           icon: Icons.work_outline,
+          controller: roleController,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          context,
+          label: "Senha",
+          hint: "Digite sua senha",
+          icon: Icons.lock_outline,
+          isPassword: true,
+          obscureText: _obscurePassword,
+          controller: passwordController,
+          onToggleVisibility: () {
+            setState(() {
+              _obscurePassword = !_obscurePassword;
+            });
+          },
         ),
 
         const SizedBox(height: 32),
@@ -296,23 +357,36 @@ class ProfileScreen extends StatelessWidget {
     required String hint,
     required IconData icon,
     TextInputType? keyboardType,
+    TextEditingController? controller,
+    //Senha
+    bool isPassword = false,
+    bool obscureText = false,
+    VoidCallback? onToggleVisibility,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
         ),
         const SizedBox(height: 8),
         TextFormField(
+          controller: controller,
           keyboardType: keyboardType,
+          obscureText: isPassword ? obscureText : false,
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: Icon(icon, color: Colors.grey[400]),
+            suffixIcon: isPassword
+                ? IconButton( 
+                    onPressed: onToggleVisibility,
+                    icon: Icon(
+                      obscureText ? Icons.visibility_off : Icons.visibility,
+                    ),
+                  )
+                : null,
+
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey[300]!),

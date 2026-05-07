@@ -31,7 +31,7 @@ class UsersProvider extends ChangeNotifier {
         _updateProfileUseCase = updateProfileUseCase,
         _changePasswordUseCase = changePasswordUseCase,
         _getUsersCountUseCase = getUsersCountUseCase;
-
+        
   // Estado
   UsersState _state = UsersState.initial;
   UsersState get state => _state;

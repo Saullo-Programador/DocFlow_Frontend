@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manege_doc/controller/custom_button.dart';
 import 'package:manege_doc/controller/custom_input.dart';
+import 'package:manege_doc/core/constants/type_role.dart';
 import 'package:manege_doc/features/auth/presentation/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -19,6 +20,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  TypeRole? _selectedRole;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -38,6 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final success = await authProvider.register(
       _emailController.text.trim(),
+      _selectedRole ?? TypeRole.USER,
       _passwordController.text.trim(),
       name: _nameController.text.trim(),
     );
@@ -58,7 +62,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           backgroundColor: Colors.grey[100],
           body: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
               child: Container(
                 width: isSmallScreen ? double.infinity : 500,
                 padding: const EdgeInsets.symmetric(
@@ -88,7 +91,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           onTap: () => context.go("/login"),
                           borderRadius: BorderRadius.circular(8),
                           child: Padding(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(0),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -126,7 +129,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           color: theme.primaryColor,
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 12),
 
                       // Título
                       Text(
@@ -137,7 +140,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 6),
 
                       // Subtítulo
                       Text(
@@ -145,10 +148,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: Colors.grey[600],
-                          height: 1.5,
+                          height: 1.0,
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 16),
 
                       // Campo de Usuário
                       CustomInput(
@@ -166,7 +169,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
                       // Campo de E-mail
                       CustomInput(
@@ -189,7 +192,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
+
+                      // Campo de Perfil
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Perfil",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          // Campo de Role
+                          DropdownButtonFormField<TypeRole>(
+                            initialValue: _selectedRole,
+                            decoration: InputDecoration(
+                              hintText: 'Selecione um perfil',
+                              prefixIcon: const Icon(Icons.badge_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.withValues(alpha: 0.1),
+                            ),
+                            items: TypeRole.values
+                                .map(
+                                  (role) => DropdownMenuItem(
+                                    value: role,
+                                    child: Text(role.label),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() => _selectedRole = value);
+                              context.read<AuthProvider>().clearError();
+                            },
+                            validator: (value) {
+                              if (value == null) return 'Selecione um perfil';
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
 
                       // Campo de Senha
                       CustomInput(
@@ -210,8 +258,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           }
                           return null;
                         },
+                        obscureText: _obscurePassword,
+                        onToggleVisibility: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
                       // Campo de Confirmar Senha
                       CustomInput(
@@ -232,6 +286,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           }
                           return null;
                         },
+                        obscureText: _obscurePassword,
+                        onToggleVisibility: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
                       ),
                       const SizedBox(height: 24),
 
@@ -250,7 +310,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: CustomButton(
                           text: "Criar Conta",
                           isLoading: authProvider.isLoading,
-                          onPressed: authProvider.isLoading ? null : () => _register(),
+                          onPressed: authProvider.isLoading
+                              ? null
+                              : () => _register(),
                         ),
                       ),
                       const SizedBox(height: 24),

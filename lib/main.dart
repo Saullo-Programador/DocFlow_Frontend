@@ -4,7 +4,7 @@ import 'package:manege_doc/router/app_router.dart';
 import 'package:provider/provider.dart';
 
 import 'core/di/injection.dart';
-import 'features/auth/presentation/providers/auth_provider.dart';
+import 'features/auth/presentation/providers/auth_provider.dart'; 
 import 'features/files/presentation/providers/files_provider.dart';
 import 'features/folders/presentation/providers/folders_provider.dart';
 import 'features/history/presentation/providers/history_provider.dart';
