@@ -41,6 +41,9 @@ class FoldersProvider extends ChangeNotifier {
   // Estado
   FoldersState _state = FoldersState.initial;
   FoldersState get state => _state;
+
+  bool _isLoadingCount = false;
+  bool get isLoadingCount => _isLoadingCount; 
   
   // Estado Count
   int _foldersCount = 0;
@@ -109,7 +112,7 @@ class FoldersProvider extends ChangeNotifier {
     String name, {
     String? parentId,
   }) async {
-    _setState(FoldersState.creating);
+    _setState(FoldersState.loading);
     _clearError();
 
     final result = await _createFolderUseCase(
@@ -210,6 +213,9 @@ class FoldersProvider extends ChangeNotifier {
 
   /// Obtém contagem total de pastas
   Future<void> getFoldersCount() async {
+    _isLoadingCount = true;
+    notifyListeners();
+
     final result = await _getFoldersCountUseCase();
 
     result.fold(
@@ -218,9 +224,10 @@ class FoldersProvider extends ChangeNotifier {
       },
       (count){
         _foldersCount = count;
-        notifyListeners();
       }
     );
+    _isLoadingCount = false;
+    notifyListeners();
   }
 
   /// Limpa erro

@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:manege_doc/features/folders/domain/usecases/folders_usecases.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/file_entity.dart';
 import '../../domain/usecases/files_usecases.dart';
@@ -24,7 +23,7 @@ class FilesProvider extends ChangeNotifier {
   final RenameFileUseCase _renameFileUseCase;
   final MoveFileUseCase _moveFileUseCase;
   final GetLatestUploadsUseCase _getLatestUploadsUseCase;
-  final GetFoldersCountUseCase _getFoldersCountUseCase;
+  final GetFilesCountUseCase _getFilesCountUseCase;
 
   FilesProvider({
     required GetFilesUseCase getFilesUseCase,
@@ -34,7 +33,7 @@ class FilesProvider extends ChangeNotifier {
     required RenameFileUseCase renameFileUseCase,
     required MoveFileUseCase moveFileUseCase,
     required GetLatestUploadsUseCase getLatestUploadsUseCase,
-    required GetFoldersCountUseCase getFoldersCountUseCase,
+    required GetFilesCountUseCase getFilesCountUseCase,
   })  : _getFilesUseCase = getFilesUseCase,
         _uploadFileUseCase = uploadFileUseCase,
         _downloadFileUseCase = downloadFileUseCase,
@@ -42,11 +41,14 @@ class FilesProvider extends ChangeNotifier {
         _renameFileUseCase = renameFileUseCase,
         _moveFileUseCase = moveFileUseCase,
         _getLatestUploadsUseCase = getLatestUploadsUseCase,
-        _getFoldersCountUseCase = getFoldersCountUseCase;
+        _getFilesCountUseCase = getFilesCountUseCase;
 
   // Estado
   FilesState _state = FilesState.initial;
   FilesState get state => _state;
+
+  bool _isLoadingCount = false;
+  bool get isLoadingCount => _isLoadingCount;
 
   // Estado Count
   int _filesCount = 0;
@@ -226,7 +228,10 @@ class FilesProvider extends ChangeNotifier {
   }
 
   Future<void> getFilesCount() async{
-    final result = await _getFoldersCountUseCase();
+    _isLoadingCount = true;
+    notifyListeners();
+
+    final result = await _getFilesCountUseCase();
     
     result.fold(
       (failure){
@@ -234,9 +239,10 @@ class FilesProvider extends ChangeNotifier {
       },
       (count){
         _filesCount = count;
-        notifyListeners();
       },
     );
+    _isLoadingCount = false;
+    notifyListeners();
   }
 
   /// Seleciona arquivo

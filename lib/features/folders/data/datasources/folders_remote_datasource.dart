@@ -137,6 +137,6 @@ class FoldersRemoteDataSourceImpl implements FoldersRemoteDataSource {
       '${ApiConstants.documentsBase}/folders/count',
     );
 
-    return response.data['count'] as int? ?? 0;
+    return int.parse(response.data.toString());
   }
 }

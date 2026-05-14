@@ -86,6 +86,6 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
       '${ApiConstants.usersBase}/count',
     );
 
-    return response.data['count'] as int? ?? 0;
+    return int.parse(response.data.toString());
   }
 }

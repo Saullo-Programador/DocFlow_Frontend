@@ -22,6 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   TypeRole? _selectedRole;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -59,7 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         return Scaffold(
-          backgroundColor: Colors.grey[100],
+          backgroundColor: theme.colorScheme.background,
           body: Center(
             child: SingleChildScrollView(
               child: Container(
@@ -69,11 +70,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   vertical: 40,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: theme.colorScheme.surface.withValues(alpha: 0.08),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),
@@ -98,13 +99,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 Icon(
                                   Icons.arrow_back_ios_new_rounded,
                                   size: 18,
-                                  color: theme.primaryColor,
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.9),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Voltar',
                                   style: TextStyle(
-                                    color: theme.primaryColor,
+                                    color: theme.colorScheme.primary.withValues(alpha: 0.9),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -120,13 +121,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: theme.primaryColor.withValues(alpha: 0.1),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.person_add_outlined,
                           size: 50,
-                          color: theme.primaryColor,
+                          color: theme.colorScheme.primary.withValues(alpha: 0.9),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -136,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         'Criar Conta',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey[800],
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -147,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         'Preencha os dados abaixo para se cadastrar',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey[600],
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                           height: 1.0,
                         ),
                       ),
@@ -211,12 +212,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             initialValue: _selectedRole,
                             decoration: InputDecoration(
                               hintText: 'Selecione um perfil',
+                              hintStyle: TextStyle(
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
                               prefixIcon: const Icon(Icons.badge_outlined),
+                              prefixIconColor: theme.colorScheme.onSurface.withValues(alpha: 0.9),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
+                                ),
                               ),
                               filled: true,
-                              fillColor: Colors.grey.withValues(alpha: 0.1),
+                              fillColor: theme.colorScheme.background.withValues(alpha: 0.9),
                             ),
                             items: TypeRole.values
                                 .map(
@@ -286,10 +294,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           }
                           return null;
                         },
-                        obscureText: _obscurePassword,
+                        obscureText: _obscureConfirmPassword,
                         onToggleVisibility: () {
                           setState(() {
-                            _obscurePassword = !_obscurePassword;
+                            _obscureConfirmPassword = !_obscureConfirmPassword;
                           });
                         },
                       ),

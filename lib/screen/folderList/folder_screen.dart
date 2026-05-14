@@ -313,9 +313,6 @@ class _FolderScreenState extends State<FolderScreen> {
         await _loadFolder(currentPath);
       }
 
-      if (mounted) {
-        await _loadFolder(currentPath);
-      }
     }
   }
 

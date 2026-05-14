@@ -174,7 +174,7 @@ void _initFiles() {
     renameFileUseCase: sl(),
     moveFileUseCase: sl(),
     getLatestUploadsUseCase: sl(),
-    getFoldersCountUseCase: sl(),
+    getFilesCountUseCase: sl(),
   ));
 }
 

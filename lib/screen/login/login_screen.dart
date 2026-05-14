@@ -19,11 +19,15 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  final _userFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
 
   @override
   void dispose() {
     _nameController.dispose();
     _passwordController.dispose();
+    _passwordFocusNode.dispose();
+    _userFocusNode.dispose();
     super.dispose();
   }
 
@@ -51,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         return Scaffold(
-          backgroundColor: Colors.grey[100],
+          backgroundColor: theme.colorScheme.background,
           body: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -62,11 +66,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   vertical: 40,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: theme.colorScheme.surface.withValues(alpha: 0.08),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),
@@ -82,13 +86,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: theme.primaryColor.withValues(alpha: 0.1),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.folder_shared_outlined,
                           size: 50,
-                          color: theme.primaryColor,
+                          color: theme.colorScheme.primary.withValues(alpha: 0.9),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -98,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Bem-vindo ao DocFlow',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey[800],
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -109,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Faça login para acessar seus documentos',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey[600],
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                           height: 1.5,
                         ),
                       ),
@@ -127,6 +131,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             return "Campo obrigatório";
                           }
                           return null;
+                        },
+                        focusNode: _userFocusNode,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_){
+                          Focus.of(context).requestFocus(_passwordFocusNode);
                         },
                       ),
                       const SizedBox(height: 12),
@@ -151,6 +160,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             _obscurePassword = !_obscurePassword;
                           });
                         },
+                        focusNode: _passwordFocusNode,
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) async{
+                          await _login();
+                        },
                       ),
                       const SizedBox(height: 8),
 
@@ -170,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Text(
                             "Esqueci minha senha",
                             style: TextStyle(
-                              color: theme.primaryColor,
+                              color: theme.colorScheme.primary.withValues(alpha: 0.9),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -183,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.only(bottom: 16),
                           child: Text(
                             context.watch<AuthProvider>().errorMessage!,
-                            style: TextStyle(color: Colors.red[600]),
+                            style: TextStyle(color: theme.colorScheme.error.withValues(alpha: 0.9)),
                           ),
                         ),
                       // Botão Entrar
@@ -191,6 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         height: 52,
                         child: CustomButton(
+                          color: theme.colorScheme.primary,
                           text: "Entrar",
                           isLoading: authProvider.isLoading,
                           onPressed: authProvider.isLoading
@@ -206,14 +221,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           Text(
                             "Não tem uma conta?",
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
                           ),
                           TextButton(
                             onPressed: () => context.go("/register"),
                             child: Text(
                               "Cadastre-se",
                               style: TextStyle(
-                                color: theme.primaryColor,
+                                color: theme.colorScheme.primary.withValues(alpha: 0.9),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

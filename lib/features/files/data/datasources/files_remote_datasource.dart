@@ -144,6 +144,6 @@ class FilesRemoteDataSourceImpl implements FilesRemoteDataSource {
       '${ApiConstants.documentsBase}/count',
     );
 
-    return response.data['count'] as int? ?? 0;
+    return int.parse(response.data.toString());
   }
 }

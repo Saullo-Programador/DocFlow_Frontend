@@ -15,8 +15,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController nameController;
   late TextEditingController emailController;
   late TextEditingController roleController;
-  late TextEditingController passwordController;
-  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -25,9 +23,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     nameController = TextEditingController();
     emailController = TextEditingController();
     roleController = TextEditingController();
-    passwordController = TextEditingController();
 
-    loadUser();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loadUser();
+    });
   }
 
   @override
@@ -35,7 +34,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     nameController.dispose();
     emailController.dispose();
     roleController.dispose();
-    passwordController.dispose();
 
     super.dispose();
   }
@@ -47,14 +45,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final user = provider.currentUser;
 
-    if (user != null) {
-      nameController.text = user.name ?? "Usuário";
-      emailController.text = user.email;
-      roleController.text = user.role.label;
-      passwordController.text = user.password ?? "********";
-    }
+    if (user == null) return;
 
-    setState(() {});
+    nameController.text = user.name ?? "";
+    emailController.text = user.email;
+    roleController.text = user.role.label;
   }
 
   @override
@@ -63,130 +58,139 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isMobile = Responsive.isMobile(context);
     final isDesktop = Responsive.isDesktop(context);
 
-    final userProvider = context.watch<UsersProvider>();
+    final userProvider = context.read<UsersProvider>();
     final user = userProvider.currentUser;
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(isMobile ? 16 : AppConstants.defaultPadding),
-        child: Center(
-          child: Container(
-            width: isDesktop ? 900 : double.infinity,
-            constraints: const BoxConstraints(maxWidth: 1000),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: theme.primaryColor.withValues(alpha: 0.05),
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey[200]!),
+      child: userProvider.state == UsersState.loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: EdgeInsets.all(
+                isMobile ? 16 : AppConstants.defaultPadding,
+              ),
+              child: Center(
+                child: Container(
+                  width: isDesktop ? 900 : double.infinity,
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
                       ),
-                    ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Botão Voltar
-                        InkWell(
-                          onTap: () => Navigator.pop(context),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.arrow_back_ios_new_rounded,
-                                  size: 18,
-                                  color: theme.primaryColor,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Voltar para Configurações',
-                                  style: TextStyle(
-                                    color: theme.primaryColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                        // Header
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor.withValues(alpha: 0.05),
+                            border: Border(
+                              bottom: BorderSide(color: Colors.grey[200]!),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Perfil",
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[800],
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Botão Voltar
+                              InkWell(
+                                onTap: () {
+                                  if (Navigator.canPop(context)) {
+                                    Navigator.pop(context);
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.arrow_back_ios_new_rounded,
+                                        size: 18,
+                                        color: theme.primaryColor,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Voltar para Configurações',
+                                        style: TextStyle(
+                                          color: theme.primaryColor,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Perfil",
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Gerencie suas informações pessoais",
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Gerencie suas informações pessoais",
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+
+                        // Conteúdo
+                        Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: isDesktop
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 1,
+                                      child: _buildProfileCard(
+                                        context,
+                                        email:
+                                            user?.email ?? "usuario@email.com",
+                                        name: user?.name ?? "Usuário",
+                                      ),
+                                    ),
+                                    const SizedBox(width: 32),
+                                    Expanded(
+                                      flex: 2,
+                                      child: _buildProfileForm(context),
+                                    ),
+                                  ],
+                                )
+                              : Column(
+                                  children: [
+                                    _buildProfileCard(
+                                      context,
+                                      email: user?.email ?? "usuario@email.com",
+                                      name: user?.name ?? "Usuário",
+                                    ),
+                                    const SizedBox(height: 24),
+                                    _buildProfileForm(context),
+                                  ],
+                                ),
                         ),
                       ],
                     ),
                   ),
-
-                  // Conteúdo
-                  Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: isDesktop
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 1,
-                                child: _buildProfileCard(
-                                  context,
-                                  email: user?.email ?? "usuario@email.com",
-                                  name: user?.name ?? "Usuário",
-                                ),
-                              ),
-                              const SizedBox(width: 32),
-                              Expanded(
-                                flex: 2,
-                                child: _buildProfileForm(context),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            children: [
-                              _buildProfileCard(
-                                context,
-                                email: user?.email ?? "usuario@email.com",
-                                name: user?.name ?? "Usuário",
-                              ),
-                              const SizedBox(height: 24),
-                              _buildProfileForm(context),
-                            ],
-                          ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -259,6 +263,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildProfileForm(BuildContext context) {
     final theme = Theme.of(context);
+    final userProvider = context.watch<UsersProvider>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,22 +300,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           hint: "Digite seu cargo",
           icon: Icons.work_outline,
           controller: roleController,
+          enabled: false,
         ),
         const SizedBox(height: 16),
-        _buildTextField(
-          context,
-          label: "Senha",
-          hint: "Digite sua senha",
-          icon: Icons.lock_outline,
-          isPassword: true,
-          obscureText: _obscurePassword,
-          controller: passwordController,
-          onToggleVisibility: () {
-            setState(() {
-              _obscurePassword = !_obscurePassword;
-            });
-          },
-        ),
 
         const SizedBox(height: 32),
 
@@ -332,7 +324,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: userProvider.state == UsersState.updating
+                    ? null
+                    : () async {
+                        final success = await context
+                            .read<UsersProvider>()
+                            .updateProfile(name: nameController.text);
+
+                        if (!mounted) return;
+
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Perfil atualizado")),
+                          );
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.primaryColor,
                   foregroundColor: Colors.white,
@@ -342,7 +348,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text("Salvar Alterações"),
+                child: userProvider.state == UsersState.updating
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text("Salvar Alterações"),
               ),
             ),
           ],
@@ -362,6 +377,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool isPassword = false,
     bool obscureText = false,
     VoidCallback? onToggleVisibility,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -372,6 +388,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          enabled: enabled,
           controller: controller,
           keyboardType: keyboardType,
           obscureText: isPassword ? obscureText : false,
@@ -379,7 +396,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             hintText: hint,
             prefixIcon: Icon(icon, color: Colors.grey[400]),
             suffixIcon: isPassword
-                ? IconButton( 
+                ? IconButton(
                     onPressed: onToggleVisibility,
                     icon: Icon(
                       obscureText ? Icons.visibility_off : Icons.visibility,

@@ -4,7 +4,7 @@ import 'package:manege_doc/router/app_router.dart';
 import 'package:provider/provider.dart';
 
 import 'core/di/injection.dart';
-import 'features/auth/presentation/providers/auth_provider.dart'; 
+import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/files/presentation/providers/files_provider.dart';
 import 'features/folders/presentation/providers/folders_provider.dart';
 import 'features/history/presentation/providers/history_provider.dart';
@@ -38,9 +38,31 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp.router(
         title: 'DocFlow',
+
+        // Tema Claro
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            surface: Colors.white,
+            primaryContainer: Colors.white,
+            background: Colors.grey[100],
+            onSurface: Colors.black87,
+          ),
         ),
+
+        // Tema Escuro
+        darkTheme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            surface: Colors.black,
+            primaryContainer: const Color(0xFF1E1E1E),
+            background: const Color(0xFF121212),
+            onSurface: Colors.white,
+          ),
+        ),
+        themeMode: ThemeMode.light,
         routerConfig: appRouter,
       ),
     );

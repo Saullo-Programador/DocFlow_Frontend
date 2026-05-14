@@ -16,31 +16,23 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+
+bool _initialized = false;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_initialized) return; // ← bloqueia re-execuções
+    _initialized = true;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final providerFolder = context.read<FoldersProvider>();
-      final providerFiles = context.read<FilesProvider>();
-      final providerUsers = context.read<UsersProvider>();
-      final providerHistory = context.read<HistoryProvider>();
+      if (!mounted) return;
 
-      if (providerFolder.foldersCount == 0) {
-        providerFolder.getFoldersCount();
-      }
-
-      if (providerFiles.filesCount == 0) {
-        providerFiles.getFilesCount();
-      }
-
-      if (providerUsers.usersCount == 0) {
-        providerUsers.getUsersCount();
-      }
-
-      if (providerHistory.history.isEmpty) {
-        providerHistory.getHistory(limit: 10, refresh: true);
-      }
+      context.read<FoldersProvider>().getFoldersCount();
+      context.read<FilesProvider>().getFilesCount();
+      context.read<UsersProvider>().getUsersCount();
+      context.read<HistoryProvider>().getHistory(limit: 10, refresh: true);
     });
   }
 
@@ -199,7 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _stat(
               Icons.folder,
               "Pastas",
-              folders.state == FoldersState.loading
+              folders.isLoadingCount
                   ? "..."
                   : folders.foldersCount.toString(),
               Colors.blue,
@@ -208,7 +200,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _stat(
               Icons.insert_drive_file,
               "Documentos",
-              files.state == FilesState.loading
+              files.isLoadingCount
                   ? "..."
                   : files.filesCount.toString(),
               Colors.green,

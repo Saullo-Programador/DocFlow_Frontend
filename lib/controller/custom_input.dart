@@ -11,6 +11,9 @@ class CustomInput extends StatelessWidget {
   final TextEditingController? controller;
   final String? Function(String?)? validator;
   final TextInputType keyboardType;
+  final void Function(String)? onFieldSubmitted;
+  final FocusNode? focusNode;
+  final TextInputAction? textInputAction;
 
   const CustomInput({
     super.key,
@@ -24,6 +27,9 @@ class CustomInput extends StatelessWidget {
     this.controller,
     this.validator,
     this.keyboardType = TextInputType.text,
+    this.onFieldSubmitted,
+    this.focusNode,
+    this.textInputAction,
   });
 
   @override
@@ -41,13 +47,21 @@ class CustomInput extends StatelessWidget {
           onChanged: onChanged,
           obscureText: isPassword ? obscureText : false,
           keyboardType: keyboardType,
+          onFieldSubmitted: onFieldSubmitted,
+          focusNode: focusNode,
+          textInputAction: textInputAction,
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: icon != null ? Icon(icon) : null,
+            prefixIconColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9),
+              ),
             ),
+            suffixIconColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9),
             suffixIcon: isPassword
                 ? IconButton( 
                     onPressed: onToggleVisibility,
@@ -58,7 +72,7 @@ class CustomInput extends StatelessWidget {
                 : null,
 
             filled: true,
-            fillColor: Colors.grey.withValues(alpha: 0.1),
+            fillColor: Theme.of(context).colorScheme.background.withValues(alpha: 0.9),
           ),
         ),
       ],
