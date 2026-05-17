@@ -277,16 +277,18 @@ void _initUsers() {
   // Use cases
   sl.registerLazySingleton(() => GetCurrentUserProfileUseCase(sl()));
   sl.registerLazySingleton(() => GetAllUsersUseCase(sl()));
-  sl.registerLazySingleton(() => UpdateProfileUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateUserUseCase(sl()));
   sl.registerLazySingleton(() => ChangePasswordUseCase(sl()));
+  sl.registerCachedFactory(() => DeleteUserUseCase(sl()));
   sl.registerLazySingleton(() => GetUsersCountUseCase(sl()));
 
   // Provider
   sl.registerFactory(() => UsersProvider(
     getCurrentUserProfileUseCase: sl(),
     getAllUsersUseCase: sl(),
-    updateProfileUseCase: sl(),
+    updateUserUseCase: sl(),
     changePasswordUseCase: sl(),
+    deleteUserUseCase: sl(),
     getUsersCountUseCase: sl(),
   ));
 }

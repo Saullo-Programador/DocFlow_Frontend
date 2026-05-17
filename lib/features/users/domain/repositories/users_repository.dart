@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:manege_doc/core/constants/type_role.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/user_profile_entity.dart';
 
@@ -24,4 +25,16 @@ abstract class UsersRepository {
 
   /// Obtém contagem total de usuários
   Future<Either<Failure, int>> getUsersCount();
+
+  /// Deleta um usuário (admin)
+  Future<Either<Failure, void>> deleteUser(String userId);
+
+  /// Atualizar perfil de usuário (admin)
+  Future<Either<Failure, void>> updateUser(
+    String id,
+    {
+      String? name,
+      TypeRole? role
+    }
+  );
 }

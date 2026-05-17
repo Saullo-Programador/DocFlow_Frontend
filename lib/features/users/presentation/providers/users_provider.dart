@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:manege_doc/core/constants/type_role.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/user_profile_entity.dart';
 import '../../domain/usecases/users_usecases.dart';
@@ -16,22 +17,25 @@ enum UsersState {
 class UsersProvider extends ChangeNotifier {
   final GetCurrentUserProfileUseCase _getCurrentUserProfileUseCase;
   final GetAllUsersUseCase _getAllUsersUseCase;
-  final UpdateProfileUseCase _updateProfileUseCase;
   final ChangePasswordUseCase _changePasswordUseCase;
   final GetUsersCountUseCase _getUsersCountUseCase;
+  final DeleteUserUseCase _deleteUserUseCase;
+  final UpdateUserUseCase _updateUserUseCase;
 
   UsersProvider({
     required GetCurrentUserProfileUseCase getCurrentUserProfileUseCase,
     required GetAllUsersUseCase getAllUsersUseCase,
-    required UpdateProfileUseCase updateProfileUseCase,
     required ChangePasswordUseCase changePasswordUseCase,
     required GetUsersCountUseCase getUsersCountUseCase,
+    required DeleteUserUseCase deleteUserUseCase,
+    required UpdateUserUseCase updateUserUseCase,
   })  : _getCurrentUserProfileUseCase = getCurrentUserProfileUseCase,
         _getAllUsersUseCase = getAllUsersUseCase,
-        _updateProfileUseCase = updateProfileUseCase,
         _changePasswordUseCase = changePasswordUseCase,
-        _getUsersCountUseCase = getUsersCountUseCase;
-        
+        _getUsersCountUseCase = getUsersCountUseCase,
+        _deleteUserUseCase = deleteUserUseCase,
+        _updateUserUseCase = updateUserUseCase;
+
   // Estado
   UsersState _state = UsersState.initial;
   UsersState get state => _state;
@@ -89,18 +93,20 @@ class UsersProvider extends ChangeNotifier {
     );
   }
 
-  /// Atualiza perfil
-  Future<bool> updateProfile({
+  /// Atualiza perfil de usuário (admin)
+  Future<bool> updateUser(
+    String id, {
     String? name,
-    String? avatarUrl,
+    TypeRole? role
   }) async {
     _setState(UsersState.updating);
     _clearError();
     _clearSuccess();
 
-    final result = await _updateProfileUseCase(
+    final result = await _updateUserUseCase(
+      id,
       name: name,
-      avatarUrl: avatarUrl,
+      role: role,
     );
 
     final success = result.fold(
@@ -108,8 +114,7 @@ class UsersProvider extends ChangeNotifier {
         _setError(_mapFailureToMessage(failure));
         return false;
       },
-      (user) {
-        _currentUser = user;
+      (_) {
         _successMessage = 'Perfil atualizado com sucesso';
         _setState(UsersState.loaded);
         return true;
@@ -142,6 +147,7 @@ class UsersProvider extends ChangeNotifier {
     return success;
   }
 
+  /// Obtém contagem total de usuários
   Future<void> getUsersCount() async {
     final result = await _getUsersCountUseCase();
     result.fold(
@@ -153,6 +159,30 @@ class UsersProvider extends ChangeNotifier {
         notifyListeners();
       },
     );
+  }
+
+  /// Deleta um usuário (admin)
+  Future<bool> deleteUser(String userId) async {
+    _setState(UsersState.updating);
+    _clearError();
+    _clearSuccess();
+
+    final result = await _deleteUserUseCase(userId);
+
+    final success = result.fold(
+      (failure) {
+        _setError(_mapFailureToMessage(failure));
+        return false;
+      },
+      (_) {
+        _users.removeWhere((user) => user.id == userId);
+        _successMessage = 'Usuário deletado com sucesso';
+        _setState(UsersState.loaded);
+        return true;
+      },
+    );
+
+    return success;
   }
 
   /// Limpa erro

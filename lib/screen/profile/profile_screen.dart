@@ -329,7 +329,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     : () async {
                         final success = await context
                             .read<UsersProvider>()
-                            .updateProfile(name: nameController.text);
+                            .updateUser(
+                              userProvider.currentUser!.id,
+                              name: nameController.text,
+                              role: userProvider.currentUser!.role,
+                            );
 
                         if (!mounted) return;
 

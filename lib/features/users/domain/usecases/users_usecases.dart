@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:manege_doc/core/constants/type_role.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/user_profile_entity.dart';
 import '../repositories/users_repository.dart';
@@ -25,20 +26,6 @@ class GetAllUsersUseCase {
   }
 }
 
-/// Caso de uso: Atualizar perfil
-class UpdateProfileUseCase {
-  final UsersRepository _repository;
-
-  UpdateProfileUseCase(this._repository);
-
-  Future<Either<Failure, UserProfileEntity>> call({
-    String? name,
-    String? avatarUrl,
-  }) {
-    return _repository.updateProfile(name: name, avatarUrl: avatarUrl);
-  }
-}
-
 /// Caso de uso: Alterar senha
 class ChangePasswordUseCase {
   final UsersRepository _repository;
@@ -58,5 +45,31 @@ class GetUsersCountUseCase {
 
   Future<Either<Failure, int>> call() {
     return _repository.getUsersCount();
+  }
+}
+
+/// Caso de uso: Deletar usuário (admin)
+class DeleteUserUseCase {
+  final UsersRepository _repository;
+
+  DeleteUserUseCase(this._repository);
+
+  Future<Either<Failure, void>> call(String userId) {
+    return _repository.deleteUser(userId);
+  }
+}
+
+/// Caso de uso: Atualizar perfil de usuário (admin)
+class UpdateUserUseCase {
+  final UsersRepository _repository;
+
+  UpdateUserUseCase(this._repository);
+
+  Future<Either<Failure, void>> call(
+    String id, {
+    String? name,
+    TypeRole? role
+  }) {
+    return _repository.updateUser(id, name: name, role: role);
   }
 }
